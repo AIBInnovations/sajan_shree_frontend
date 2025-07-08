@@ -39,12 +39,49 @@ const OrderForm = () => {
     'Blazer': ['20', '22', '24', '26', '28', '30', '32', '34', '36', '38', '40', '42', '44'],
     'Shirt': ['20', '22', '24', '26', '28', '30', '32', '34', '36', '38', '40', '42', '44']
   };
-  
+
   const products = Object.keys(productSizeMapping);
 
-  const handleSubmit = () => {
-    console.log('Order submitted:', formData);
-    // Process the order data
+  const handleSubmit = async () => {
+    try {
+      const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4NmQwN2E4OWIwZGI3MzVlOTM1Yjg0OCIsInJvbGUiOiJBZG1pbiIsImlhdCI6MTc1MTk3NjI4MywiZXhwIjoxNzUyMDYyNjgzfQ.Yy5wBb9OvnSvMkvbm3_JkoCK8ImTL-fSWoNp4QAWQRA";
+      if (!token) {
+        alert("Please login first.");
+        return;
+      }
+
+      const payload = {
+        customerName: formData.customer,
+        phone: formData.phone,
+        email: formData.email,
+        deliveryDate: formData.dueDate,
+        orderType: formData.orderType,
+        items: formData.items.map(item => ({
+          product: item.product,
+          sizes: item.sizes
+        }))
+      };
+
+      const response = await fetch("http://localhost:5000/api/orders", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        alert("✅ Order created successfully!");
+      } else {
+        alert(`❌ Failed: ${data.message}`);
+      }
+    } catch (error) {
+      console.error("Create order error:", error);
+      alert("❌ Server Error. Please try again.");
+    }
   };
 
   const handleChange = (e) => {
@@ -58,8 +95,7 @@ const OrderForm = () => {
       items: prev.items.map(item => {
         if (item.id === itemId) {
           const updatedItem = { ...item, [field]: value };
-          
-          // If product changes, reset sizes with new size chart
+
           if (field === 'product' && value) {
             const newSizes = {};
             const availableSizes = productSizeMapping[value] || [];
@@ -68,7 +104,7 @@ const OrderForm = () => {
             });
             updatedItem.sizes = newSizes;
           }
-          
+
           return updatedItem;
         }
         return item;
