@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Save, X, Plus, Trash2 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
@@ -8,6 +8,8 @@ import { useNavigate } from 'react-router-dom';
 const OrderForm = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
+  orderId: '',
+  createdAt: '',
   customer: '',
   phone: '',
   address: '',
@@ -75,6 +77,8 @@ const OrderForm = () => {
       }
 
       const payload = {
+        orderId: formData.orderId,
+        createdAt: formData.createdAt,
         customerName: formData.customer,
         phone: formData.phone,
         address: formData.address,
@@ -192,6 +196,13 @@ const OrderForm = () => {
     }, 0);
   };
 
+  const calculateRowPieces = (item) => {
+  return Object.values(item.sizes).reduce((total, size) => {
+    return total + (size.quantity || 0);
+  }, 0);
+};
+
+
   const getAllUniqueSizes = () => {
     const allSizes = new Set();
     formData.items.forEach(item => {
@@ -208,6 +219,13 @@ const OrderForm = () => {
       return total + calculateRowTotal(item);
     }, 0);
   };
+
+  const calculateGrandPieces = () => {
+  return formData.items.reduce((total, item) => {
+    return total + calculateRowPieces(item);
+  }, 0);
+};
+
 
   const handleProductDetailsChange = (itemId, field, value) => {
   setFormData(prev => ({
@@ -289,6 +307,85 @@ const OrderForm = () => {
       doc.save(`Order_${customer}.pdf`);
     };
 
+    const renderDetailFields = (item, fields) => (
+        <div className="w-full px-2 py-2 border-t border-gray-200">
+          <div className="flex flex-wrap items-start gap-6 w-full">
+            {fields.map((field) => (
+              <div key={field.key} className="flex flex-col space-y-1 w-48">
+                <label className="text-xs font-medium text-gray-700">{field.label}</label>
+                <div className="flex items-center space-x-2">
+                  <select
+                    value={item.details?.[field.key] || ''}
+                    onChange={(e) => handleProductDetailsChange(item.id, field.key, e.target.value)}
+                    className="flex-1 px-2 py-1 border border-gray-300 rounded text-xs focus:ring-1 focus:ring-blue-400"
+                  >
+                    <option value="">Select</option>
+                    {field.options.map(opt => (
+                      <option key={opt} value={opt}>{opt}</option>
+                    ))}
+                  </select>
+
+                  <label className="w-8 h-8 flex items-center justify-center border border-gray-300 rounded cursor-pointer hover:bg-gray-100">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onloadend = () => {
+                            handleProductDetailsChange(item.id, `${field.key}Image`, reader.result);
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                    />
+                  </label>
+                </div>
+
+                {item.details?.[`${field.key}Image`] && (
+                  <div className="relative mt-1 w-16 h-16">
+                    <img src={item.details[`${field.key}Image`]} alt="Preview" className="w-16 h-16 object-cover rounded border border-gray-200" />
+                    <button
+                      type="button"
+                      onClick={() => handleProductDetailsChange(item.id, `${field.key}Image`, '')}
+                      className="absolute top-0 right-0 bg-white text-red-500 rounded-full border p-0.5 hover:bg-gray-100 transform translate-x-1/2 -translate-y-1/2"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+
+      const handlePrintPage = () => {
+        window.print();
+      };
+
+
+      useEffect(() => {
+          const generateOrderId = () => {
+            const random = Math.floor(1000 + Math.random() * 9000); // random 4-digit number
+            return `ORD-${random}`;
+          };
+
+          setFormData((prev) => ({
+            ...prev,
+            orderId: generateOrderId(),
+            createdAt: new Date().toISOString()
+          }));
+        }, []);
+
+
   return (
     <div className=" mx-auto">
       <div className="mb-6">
@@ -298,7 +395,17 @@ const OrderForm = () => {
       <div className="space-y-6">
         {/* Customer Information Section */}
         <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Customer Information</h3>
+          <div className="grid grid-cols-2 gap-2 items-center">
+            <div className="row-span-2 h-full ">
+              <h3 className="text-lg font-medium text-gray-900">Customer Information</h3>
+            </div>
+            <div className="text-sm text-gray-600 text-right">
+              <span className="font-semibold">Order ID:</span> {formData.orderId}
+            </div>
+            <div className="text-sm text-gray-600 text-right">
+              <span className="font-semibold">Date:</span> {new Date(formData.createdAt).toLocaleString()}
+            </div>
+          </div>
 
           <div className="grid grid-cols-4 gap-4">
             {/* First Row */}
@@ -429,7 +536,10 @@ const OrderForm = () => {
                 ))}
               </select>
 
-              <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-4">                
+                <span className="text-gray-500 text-sm">
+                  Pieces: {calculateRowPieces(item)}
+                </span>
                 <span className="text-gray-700 font-bold text-sm">
                   Total: ₹{calculateRowTotal(item)}
                 </span>
@@ -492,159 +602,53 @@ const OrderForm = () => {
             {item.product && (
               <div className="p-2 bg-gray-50">
                 <tr>
-                        <td colSpan={getAllUniqueSizes().length + 4} className="p-2 bg-gray-50">
-                          {item.product === 'Shirt' && (
-                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                              <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-1">Cloth Type</label>
-                                <input
-                                  type="text"
-                                  value={item.details?.clothType || ''}
-                                  onChange={(e) => handleProductDetailsChange(item.id, 'clothType', e.target.value)}
-                                  className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-1">Collar Type</label>
-                                <input
-                                  type="text"
-                                  value={item.details?.collarType || ''}
-                                  onChange={(e) => handleProductDetailsChange(item.id, 'collarType', e.target.value)}
-                                  className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-1">Sleeve Type</label>
-                                <input
-                                  type="text"
-                                  value={item.details?.sleeveType || ''}
-                                  onChange={(e) => handleProductDetailsChange(item.id, 'sleeveType', e.target.value)}
-                                  className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-1">Pocket</label>
-                                <select
-                                  value={item.details?.pocket || ''}
-                                  onChange={(e) => handleProductDetailsChange(item.id, 'pocket', e.target.value)}
-                                  className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                                >
-                                  <option value="">Select</option>
-                                  <option value="Yes">Yes</option>
-                                  <option value="No">No</option>
-                                </select>
-                              </div>
-                            </div>
-                          )}
+                  <td colSpan={getAllUniqueSizes().length + 4} className="p-2 bg-gray-50">
+                  {item.product === 'Shirt' &&
+                      renderDetailFields(item, [
+                        { label: 'Collar', key: 'collarType', options: ['Pipeline', 'Matching Collar', 'Collar Patti', 'Creation'] },
+                        { label: 'Astin', key: 'astinType', options: ['Patti', 'Pipeline', 'Luppi', 'Creation'] },
+                        { label: 'Front', key: 'frontType', options: ['Patti', 'Pipeline', 'Creation'] },
+                        { label: 'Mono', key: 'mono', options: ['Yes', 'No'] },
+                        { label: 'Pocket', key: 'pocketType', options: ['Pipeline', 'Patti', 'Creation'] },
+                        { label: 'Color', key: 'color', options: ['White', 'Black', 'Blue', 'Red', 'Other'] },
+                      ])
+                    }
 
-                          {item.product === 'Skirt' && (
-                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div>
-                                  <label className="block text-xs font-medium text-gray-700 mb-1">Cloth Type</label>
-                                  <input
-                                    type="text"
-                                    value={item.details?.clothType || ''}
-                                    onChange={(e) => handleProductDetailsChange(item.id, 'clothType', e.target.value)}
-                                    className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                                  />
-                                </div>
-                                <div>
-                                  <label className="block text-xs font-medium text-gray-700 mb-1">Length Type</label>
-                                  <input
-                                    type="text"
-                                    value={item.details?.lengthType || ''}
-                                    onChange={(e) => handleProductDetailsChange(item.id, 'lengthType', e.target.value)}
-                                    className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                                  />
-                                </div>
-                                <div>
-                                  <label className="block text-xs font-medium text-gray-700 mb-1">Style</label>
-                                  <input
-                                    type="text"
-                                    value={item.details?.style || ''}
-                                    onChange={(e) => handleProductDetailsChange(item.id, 'style', e.target.value)}
-                                    className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                                  />
-                                </div>
-                              </div>
-                            )}
-                            {item.product === 'Blazer' && (
-                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div>
-                                  <label className="block text-xs font-medium text-gray-700 mb-1">Cloth Type</label>
-                                  <input
-                                    type="text"
-                                    value={item.details?.clothType || ''}
-                                    onChange={(e) => handleProductDetailsChange(item.id, 'clothType', e.target.value)}
-                                    className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                                  />
-                                </div>
-                                <div>
-                                  <label className="block text-xs font-medium text-gray-700 mb-1">Button Style</label>
-                                  <input
-                                    type="text"
-                                    value={item.details?.buttonStyle || ''}
-                                    onChange={(e) => handleProductDetailsChange(item.id, 'buttonStyle', e.target.value)}
-                                    className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                                  />
-                                </div>
-                                <div>
-                                  <label className="block text-xs font-medium text-gray-700 mb-1">Lining Type</label>
-                                  <input
-                                    type="text"
-                                    value={item.details?.liningType || ''}
-                                    onChange={(e) => handleProductDetailsChange(item.id, 'liningType', e.target.value)}
-                                    className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                                  />
-                                </div>
-                              </div>
-                            )}
-                            {item.product === 'Pant Elastic' && (
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                  <label className="block text-xs font-medium text-gray-700 mb-1">Elastic Type</label>
-                                  <input
-                                    type="text"
-                                    value={item.details?.elasticType || ''}
-                                    onChange={(e) => handleProductDetailsChange(item.id, 'elasticType', e.target.value)}
-                                    className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                                  />
-                                </div>
-                                <div>
-                                  <label className="block text-xs font-medium text-gray-700 mb-1">Color</label>
-                                  <input
-                                    type="text"
-                                    value={item.details?.color || ''}
-                                    onChange={(e) => handleProductDetailsChange(item.id, 'color', e.target.value)}
-                                    className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                                  />
-                                </div>
-                              </div>
-                            )}
-                            {item.product === 'Pant Belt' && (
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                  <label className="block text-xs font-medium text-gray-700 mb-1">Material</label>
-                                  <input
-                                    type="text"
-                                    value={item.details?.material || ''}
-                                    onChange={(e) => handleProductDetailsChange(item.id, 'material', e.target.value)}
-                                    className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                                  />
-                                </div>
-                                <div>
-                                  <label className="block text-xs font-medium text-gray-700 mb-1">Buckle Type</label>
-                                  <input
-                                    type="text"
-                                    value={item.details?.buckleType || ''}
-                                    onChange={(e) => handleProductDetailsChange(item.id, 'buckleType', e.target.value)}
-                                    className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                                  />
-                                </div>
-                              </div>
-                            )}
-                        </td>
-                      </tr>
+
+                  {item.product === 'Skirt' &&
+                    renderDetailFields(item, [
+                      { label: 'Cloth Type', key: 'clothType', options: ['Cotton', 'Linen', 'Silk', 'Polyester'] },
+                      { label: 'Length Type', key: 'lengthType', options: ['Knee Length', 'Midi', 'Maxi', 'Mini'] },
+                      { label: 'Style', key: 'style', options: ['A-Line', 'Pencil', 'Pleated', 'Wrap'] },
+                      { label: 'Color', key: 'color', options: ['White', 'Black', 'Blue', 'Red', 'Other'] },
+                    ])
+                  }
+
+                  {item.product === 'Blazer' &&
+                    renderDetailFields(item, [
+                      { label: 'Cloth Type', key: 'clothType', options: ['Wool', 'Cotton', 'Linen', 'Synthetic'] },
+                      { label: 'Button Style', key: 'buttonStyle', options: ['Single Breasted', 'Double Breasted'] },
+                      { label: 'Lining Type', key: 'liningType', options: ['Full Lined', 'Half Lined', 'Unlined'] },
+                      { label: 'Color', key: 'color', options: ['Black', 'Navy', 'Grey', 'Beige', 'Other'] },
+                    ])
+                  }
+
+                  {item.product === 'Pant Elastic' &&
+                    renderDetailFields(item, [
+                      { label: 'Elastic Type', key: 'elasticType', options: ['Soft', 'Strong', 'Heavy Duty'] },
+                      { label: 'Color', key: 'color', options: ['Black', 'White', 'Grey', 'Other'] },
+                    ])
+                  }
+
+                  {item.product === 'Pant Belt' &&
+                    renderDetailFields(item, [
+                      { label: 'Material', key: 'material', options: ['Leather', 'PU', 'Canvas'] },
+                      { label: 'Buckle Type', key: 'buckleType', options: ['Pin Buckle', 'Automatic Buckle', 'Other'] },
+                      { label: 'Color', key: 'color', options: ['Black', 'Brown', 'Tan', 'Other'] },
+                    ])
+                  }                    
+                   </td>
+                   </tr>
                 </div>
               )}
             </div>
@@ -652,9 +656,15 @@ const OrderForm = () => {
 
           {/* Grand Total */}
           <div className="flex justify-end border-t border-gray-200 pt-4 mt-4">
-            <div className="text-right">
-              <div className="text-sm text-gray-600">Grand Total:</div>
-              <div className="text-2xl font-bold text-gray-900">₹{calculateGrandTotal()}</div>
+            <div className="flex space-x-8 text-right">
+              <div>
+                <div className="text-sm text-gray-600">Total Pieces:</div>
+                <div className="text-xl font-semibold text-gray-800">{calculateGrandPieces()}</div>
+              </div>
+              <div>
+                <div className="text-sm text-gray-600">Grand Total:</div>
+                <div className="text-2xl font-bold text-gray-900">₹{calculateGrandTotal()}</div>
+              </div>
             </div>
           </div>
         </div>
@@ -663,27 +673,26 @@ const OrderForm = () => {
         {/* Action Buttons */}
         <div className="flex justify-end space-x-4">
           <button
-  type="button"
-  onClick={() => navigate('/orders')}
-  className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors inline-flex items-center"
->
-  <X className="w-4 h-4 mr-2" />
-  Cancel
-</button>
+          type="button"
+          onClick={() => navigate('/orders')}
+          className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors inline-flex items-center"
+        >
+          <X className="w-4 h-4 mr-2" />
+          Cancel
+        </button>
 
-          <button
-            type="button"
-            onClick={handleSubmit}
-            className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors inline-flex items-center"
-          >
-            <Save className="w-4 h-4 mr-2" />
-            Create Order
+        <button
+                type="button"
+                onClick={handleSubmit}
+                className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors inline-flex items-center"
+                >
+                <Save className="w-4 h-4 mr-2" />
+                Create Order
           </button>
-          <button
-  onClick={handleGeneratePDF}
-  className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
->
-  Generate PDF
+                  
+
+        <button onClick={handlePrintPage} className="px-4 py-2 bg-green-600 text-white rounded">
+  Print / Save as PDF
 </button>
 
         </div>

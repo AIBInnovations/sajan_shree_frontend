@@ -21,7 +21,7 @@ const Sidebar = ({ expanded, mobile, onClose }) => {
 
   return (
     <div
-      className={`flex flex-col border-r border-gray-200 bg-white h-full overflow-hidden transition-[width] duration-300 ${
+      className={`flex flex-col border-r border-gray-200 bg-white h-full overflow-hidden transition-[width] duration-300 print:hidden ${
         mobile ? 'w-64' : expanded ? 'w-64' : 'w-16'
       }`}
     >

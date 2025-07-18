@@ -11,7 +11,7 @@ const MobileNav = () => {
   ];
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 print:hidden">
       <div className="flex justify-around">
         {navItems.map((item) => {
           const Icon = item.icon;

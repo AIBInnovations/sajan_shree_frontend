@@ -6,7 +6,7 @@ const Header = ({ onMenuClick }) => {
   const { user } = useAuth();
 
   return (
-    <header className="bg-white shadow-sm border-b border-gray-200">
+    <header className="bg-white shadow-sm border-b border-gray-200 print:hidden">
       <div className="flex items-center justify-between h-16 px-4 md:px-6">
         <button
           onClick={onMenuClick}
