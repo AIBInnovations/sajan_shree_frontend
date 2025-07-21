@@ -1,43 +1,52 @@
 // contexts/AuthContext.jsx
-import React, { createContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect } from "react";
 
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState({
-    id: 1,
-    name: 'Admin User',
-    email: 'admin@sajanshree.com',
-    role: 'Admin'
+  const [user, setUser] = useState(() => {
+    const storedUser = localStorage.getItem("user");
+    return storedUser ? JSON.parse(storedUser) : null;
   });
-  const [isAuthenticated, setIsAuthenticated] = useState(true);
+  const [token, setToken] = useState(
+    () => localStorage.getItem("token") || null
+  );
+  const [isAuthenticated, setIsAuthenticated] = useState(!!token);
 
-  const login = (credentials) => {
-    // Implement login logic
+  useEffect(() => {
+    if (user && token) {
+      localStorage.setItem("user", JSON.stringify(user));
+      localStorage.setItem("token", token);
+    } else {
+      localStorage.removeItem("user");
+      localStorage.removeItem("token");
+    }
+    setIsAuthenticated(!!token);
+  }, [user, token]);
+
+  const login = (data) => {
+    setUser(
+      data.user || { name: data.name, email: data.email, role: data.role }
+    );
+    setToken(data.token);
     setIsAuthenticated(true);
-    setUser({
-      id: 1,
-      name: 'Admin User',
-      email: credentials.email,
-      role: 'Admin'
-    });
   };
 
   const logout = () => {
-    setIsAuthenticated(false);
     setUser(null);
+    setToken(null);
+    setIsAuthenticated(false);
+    localStorage.removeItem("user");
+    localStorage.removeItem("token");
   };
 
   const value = {
     user,
+    token,
     isAuthenticated,
     login,
-    logout
+    logout,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
