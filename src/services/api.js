@@ -1,23 +1,30 @@
 // services/api.js
-const API_BASE_URL =
-  `${import.meta.env.VITE_API_URL}/api` || "http://localhost:3001/api";
+const API_BASE_URL = `${(import.meta.env.VITE_API_URL || "http://localhost:5000")}/api`;
 
 class ApiService {
   async request(endpoint, options = {}) {
     const url = `${API_BASE_URL}${endpoint}`;
     const token = localStorage.getItem("token");
-    const config = {
-      ...options,
-      headers: {
-        "Content-Type": "application/json",
-        ...options.headers,
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
-    };
+    const isFormData = options && options.body instanceof FormData;
+    const baseHeaders = isFormData
+      ? { ...options.headers }
+      : { "Content-Type": "application/json", ...options.headers };
+    const authHeaders = token ? { Authorization: `Bearer ${token}` } : {};
+    const config = { ...options, headers: { ...baseHeaders, ...authHeaders } };
 
     const response = await fetch(url, config);
     if (!response.ok) {
-      throw new Error(`API Error: ${response.statusText}`);
+      let errorPayload;
+      try {
+        errorPayload = await response.json();
+      } catch (_) {
+        // ignore parse error
+      }
+      const message = errorPayload?.message || response.statusText || "Unknown error";
+      const error = new Error(`API Error: ${message}`);
+      error.status = response.status;
+      error.payload = errorPayload;
+      throw error;
     }
     return response.json();
   }
@@ -32,9 +39,10 @@ class ApiService {
   }
 
   createOrder(data) {
+    const isFormData = data instanceof FormData;
     return this.request("/orders", {
       method: "POST",
-      body: JSON.stringify(data),
+      body: isFormData ? data : JSON.stringify(data),
     });
   }
 

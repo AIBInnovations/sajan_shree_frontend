@@ -3,6 +3,7 @@ import { Save, X, Plus, Trash2 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { useNavigate } from 'react-router-dom';
+import ApiService from '../../services/api';
 
 
 const OrderForm = () => {
@@ -12,6 +13,7 @@ const OrderForm = () => {
   createdAt: '',
   customer: '',
   phone: '',
+  email: '',
   address: '',
   dueDate: '',
   orderType: 'walk-in',
@@ -68,49 +70,67 @@ const OrderForm = () => {
 };
 
 
+  const [orderImage, setOrderImage] = useState(null);
+
+  const validatePayload = (payload) => {
+    if (!payload.customerName?.trim()) {
+      return 'Customer name is required';
+    }
+    if (!payload.deliveryDate) {
+      return 'Delivery date is required';
+    }
+    if (!Array.isArray(payload.items) || payload.items.length === 0) {
+      return 'At least one item is required';
+    }
+    for (const item of payload.items) {
+      if (!item.product) return 'Each item must have a product';
+      if (!item.sizes || Object.keys(item.sizes).length === 0) return 'Each item must have sizes';
+    }
+    return null;
+  };
+
   const handleSubmit = async () => {
     try {
-      const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4NmQwN2E4OWIwZGI3MzVlOTM1Yjg0OCIsInJvbGUiOiJBZG1pbiIsImlhdCI6MTc1MTk3NjI4MywiZXhwIjoxNzUyMDYyNjgzfQ.Yy5wBb9OvnSvMkvbm3_JkoCK8ImTL-fSWoNp4QAWQRA";
-      if (!token) {
-        alert("Please login first.");
-        return;
-      }
-
       const payload = {
-        orderId: formData.orderId,
-        createdAt: formData.createdAt,
         customerName: formData.customer,
-        phone: formData.phone,
-        address: formData.address,
-        deliveryDate: formData.dueDate,
-        orderType: formData.orderType,
-        advancePayments: formData.advancePayments,
+        deliveryDate: formData.dueDate ? new Date(formData.dueDate).toISOString() : '',
         items: formData.items.map(item => ({
           product: item.product,
           sizes: item.sizes
-        }))
+        })),
+        orderType: formData.orderType || 'walk-in',
+        phone: formData.phone || '',
+        email: formData.email || ''
       };
 
-
-      const response = await fetch("http://localhost:5000/api/orders", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify(payload)
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        alert("✅ Order created successfully!");
-      } else {
-        alert(`❌ Failed: ${data.message}`);
+      const validationError = validatePayload(payload);
+      if (validationError) {
+        alert(`❌ ${validationError}`);
+        return;
       }
+
+      let result;
+      if (orderImage) {
+        const fd = new FormData();
+        fd.append('customerName', payload.customerName);
+        fd.append('deliveryDate', payload.deliveryDate);
+        fd.append('orderType', payload.orderType);
+        if (payload.phone) fd.append('phone', payload.phone);
+        if (payload.email) fd.append('email', payload.email);
+        fd.append('items', JSON.stringify(payload.items));
+        fd.append('orderImage', orderImage);
+        result = await ApiService.createOrder(fd);
+      } else {
+        // send JSON
+        result = await ApiService.createOrder(payload);
+      }
+
+      alert("✅ Order created successfully!");
+      navigate('/orders');
     } catch (error) {
+      const message = error?.payload?.message || error.message || 'Server Error. Please try again.';
       console.error("Create order error:", error);
-      alert("❌ Server Error. Please try again.");
+      alert(`❌ ${message}`);
     }
   };
 
@@ -462,6 +482,20 @@ const OrderForm = () => {
 
             <div className="col-span-1">
               <label className="block text-sm font-medium text-gray-700 mb-1">
+                Email
+              </label>
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                placeholder="Optional"
+              />
+            </div>
+
+            <div className="col-span-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 Order Type
               </label>
               <select
@@ -487,6 +521,18 @@ const OrderForm = () => {
                 onChange={handleChange}
                 required
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              />
+            </div>
+
+            <div className="col-span-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Order Image
+              </label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => setOrderImage(e.target.files && e.target.files[0] ? e.target.files[0] : null)}
+                className="w-full text-sm"
               />
             </div>
 
