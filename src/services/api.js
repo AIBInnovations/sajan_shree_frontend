@@ -1,5 +1,5 @@
 // services/api.js
-const API_BASE_URL = `${(import.meta.env.VITE_API_URL || "http://localhost:5000")}/api`;
+const API_BASE_URL = `${(import.meta.env.VITE_API_URL || "https://sajanshree-backend-ngnf.onrender.com")}/api`;
 
 class ApiService {
   async request(endpoint, options = {}) {
@@ -12,6 +12,12 @@ class ApiService {
     const authHeaders = token ? { Authorization: `Bearer ${token}` } : {};
     const config = { ...options, headers: { ...baseHeaders, ...authHeaders } };
 
+    console.log('API Request - URL:', url);
+    console.log('API Request - Method:', config.method);
+    console.log('API Request - Headers:', config.headers);
+    console.log('API Request - Body type:', typeof config.body);
+    console.log('API Request - Body:', config.body);
+
     const response = await fetch(url, config);
     if (!response.ok) {
       let errorPayload;
@@ -20,6 +26,15 @@ class ApiService {
       } catch (_) {
         // ignore parse error
       }
+      
+      // Handle authentication errors specifically
+      if (response.status === 401) {
+        // Clear invalid token and redirect to login
+        localStorage.removeItem("token");
+        window.location.href = "/login";
+        throw new Error("Authentication required. Please login again.");
+      }
+      
       const message = errorPayload?.message || response.statusText || "Unknown error";
       const error = new Error(`API Error: ${message}`);
       error.status = response.status;
@@ -40,6 +55,9 @@ class ApiService {
 
   createOrder(data) {
     const isFormData = data instanceof FormData;
+    console.log('API Service - isFormData:', isFormData);
+    console.log('API Service - data:', data);
+    
     return this.request("/orders", {
       method: "POST",
       body: isFormData ? data : JSON.stringify(data),

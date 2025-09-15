@@ -71,6 +71,7 @@ const OrderForm = () => {
 
 
   const [orderImage, setOrderImage] = useState(null);
+  const [currentTime, setCurrentTime] = useState(new Date());
 
   const validatePayload = (payload) => {
     if (!payload.customerName?.trim()) {
@@ -79,11 +80,17 @@ const OrderForm = () => {
     if (!payload.deliveryDate) {
       return 'Delivery date is required';
     }
+    if (!payload.product?.trim()) {
+      return 'At least one product is required';
+    }
+    if (!payload.phone?.trim()) {
+      return 'Phone number is required';
+    }
     if (!Array.isArray(payload.items) || payload.items.length === 0) {
       return 'At least one item is required';
     }
     for (const item of payload.items) {
-      if (!item.product) return 'Each item must have a product';
+      if (!item.product || item.product.trim() === '') return 'Each item must have a product selected';
       if (!item.sizes || Object.keys(item.sizes).length === 0) return 'Each item must have sizes';
     }
     return null;
@@ -91,15 +98,19 @@ const OrderForm = () => {
 
   const handleSubmit = async () => {
     try {
+      const validItems = formData.items.filter(item => item.product && item.product.trim() !== '');
+      
       const payload = {
+        orderId: formData.orderId, // Include the generated order ID
         customerName: formData.customer,
         deliveryDate: formData.dueDate ? new Date(formData.dueDate).toISOString() : '',
-        items: formData.items.map(item => ({
+        product: validItems.length > 0 ? validItems[0].product : '', // First product as direct field
+        items: validItems.map(item => ({
           product: item.product,
           sizes: item.sizes
         })),
         orderType: formData.orderType || 'walk-in',
-        phone: formData.phone || '',
+        phone: formData.phone || '', // Backend expects 'phone', not 'mobileNumber'
         email: formData.email || ''
       };
 
@@ -109,16 +120,28 @@ const OrderForm = () => {
         return;
       }
 
+      // Debug: Log the payload
+      console.log('Sending payload:', payload);
+
       let result;
       if (orderImage) {
         const fd = new FormData();
+        fd.append('orderId', payload.orderId);
         fd.append('customerName', payload.customerName);
         fd.append('deliveryDate', payload.deliveryDate);
+        fd.append('product', payload.product);
         fd.append('orderType', payload.orderType);
         if (payload.phone) fd.append('phone', payload.phone);
         if (payload.email) fd.append('email', payload.email);
         fd.append('items', JSON.stringify(payload.items));
         fd.append('orderImage', orderImage);
+        
+        // Debug: Log FormData contents
+        console.log('FormData contents:');
+        for (let [key, value] of fd.entries()) {
+          console.log(key, value);
+        }
+        
         result = await ApiService.createOrder(fd);
       } else {
         // send JSON
@@ -128,8 +151,15 @@ const OrderForm = () => {
       alert("✅ Order created successfully!");
       navigate('/orders');
     } catch (error) {
-      const message = error?.payload?.message || error.message || 'Server Error. Please try again.';
       console.error("Create order error:", error);
+      
+      if (error.message.includes("Authentication required")) {
+        alert("❌ Please login to create an order.");
+        navigate('/login');
+        return;
+      }
+      
+      const message = error?.payload?.message || error.message || 'Server Error. Please try again.';
       alert(`❌ ${message}`);
     }
   };
@@ -405,6 +435,15 @@ const OrderForm = () => {
           }));
         }, []);
 
+      // Real-time clock effect
+      useEffect(() => {
+        const timer = setInterval(() => {
+          setCurrentTime(new Date());
+        }, 1000);
+
+        return () => clearInterval(timer);
+      }, []);
+
 
   return (
     <div className=" mx-auto">
@@ -423,7 +462,15 @@ const OrderForm = () => {
               <span className="font-semibold">Order ID:</span> {formData.orderId}
             </div>
             <div className="text-sm text-gray-600 text-right">
-              <span className="font-semibold">Date:</span> {new Date(formData.createdAt).toLocaleString()}
+              <span className="font-semibold">Current Time:</span> {currentTime.toLocaleString('en-IN', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: true
+              })}
             </div>
           </div>
 
