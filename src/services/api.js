@@ -12,12 +12,6 @@ class ApiService {
     const authHeaders = token ? { Authorization: `Bearer ${token}` } : {};
     const config = { ...options, headers: { ...baseHeaders, ...authHeaders } };
 
-    console.log('API Request - URL:', url);
-    console.log('API Request - Method:', config.method);
-    console.log('API Request - Headers:', config.headers);
-    console.log('API Request - Body type:', typeof config.body);
-    console.log('API Request - Body:', config.body);
-
     const response = await fetch(url, config);
     if (!response.ok) {
       let errorPayload;
@@ -55,9 +49,6 @@ class ApiService {
 
   createOrder(data) {
     const isFormData = data instanceof FormData;
-    console.log('API Service - isFormData:', isFormData);
-    console.log('API Service - data:', data);
-    
     return this.request("/orders", {
       method: "POST",
       body: isFormData ? data : JSON.stringify(data),

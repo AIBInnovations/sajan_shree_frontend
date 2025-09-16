@@ -1,41 +1,110 @@
 // components/orders/OrderDetail.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Edit, Printer, FileText } from 'lucide-react';
 import OrderStatusBadge from './OrderStatusBadge';
+import ApiService from '../../services/api';
+import LoadingSpinner from '../common/LoadingSpinner';
 
 const OrderDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [status, setStatus] = useState('in-production');
+  const [order, setOrder] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [status, setStatus] = useState('Pending');
 
-  // Mock data - replace with actual API call
-  const order = {
-    id: 'ORD-001',
-    customer: 'Rajesh Kumar',
-    phone: '+91 98765 43210',
-    email: 'rajesh@example.com',
-    date: '2024-01-15',
-    dueDate: '2024-01-20',
-    status: status,
-    orderType: 'walk-in',
-    items: [
-      { product: 'Classic White Shirt', size: 'L', color: 'White', quantity: 2, price: 899 },
-      { product: 'Blue Denim Jeans', size: '32', color: 'Blue', quantity: 1, price: 1299 }
-    ],
-    payment: {
-      total: 3097,
-      paid: 1500,
-      due: 1597
+  const statuses = ['Pending', 'Processing', 'Completed', 'Shipped'];
+
+  // Calculate order total
+  const calculateOrderTotal = (order) => {
+    if (!order.items || !Array.isArray(order.items)) return 0;
+    
+    return order.items.reduce((total, item) => {
+      if (!item.sizes) return total;
+      
+      return total + Object.values(item.sizes).reduce((itemTotal, size) => {
+        return itemTotal + (size.quantity * size.price);
+      }, 0);
+    }, 0);
+  };
+
+  // Calculate total items count
+  const calculateItemsCount = (order) => {
+    if (!order.items || !Array.isArray(order.items)) return 0;
+    
+    return order.items.reduce((total, item) => {
+      if (!item.sizes) return total;
+      
+      return total + Object.values(item.sizes).reduce((itemTotal, size) => {
+        return itemTotal + (size.quantity || 0);
+      }, 0);
+    }, 0);
+  };
+
+  // Fetch order details
+  useEffect(() => {
+    const fetchOrder = async () => {
+      try {
+        setLoading(true);
+        const orderData = await ApiService.getOrder(id);
+        setOrder(orderData);
+        setStatus(orderData.status);
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching order:', err);
+        setError('Failed to load order details. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (id) {
+      fetchOrder();
+    }
+  }, [id]);
+
+  const updateStatus = async (newStatus) => {
+    try {
+      setStatus(newStatus);
+      // TODO: Add API call to update status
+      console.log('Updating status to:', newStatus);
+    } catch (err) {
+      console.error('Error updating status:', err);
     }
   };
 
-  const statuses = ['received', 'in-production', 'ready', 'dispatched', 'delivered'];
+  if (loading) {
+    return <LoadingSpinner />;
+  }
 
-  const updateStatus = (newStatus) => {
-    setStatus(newStatus);
-    // API call to update status
-  };
+  if (error) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-red-600">{error}</p>
+        <button 
+          onClick={() => navigate('/orders')} 
+          className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+        >
+          Back to Orders
+        </button>
+      </div>
+    );
+  }
+
+  if (!order) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-gray-600">Order not found</p>
+        <button 
+          onClick={() => navigate('/orders')} 
+          className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+        >
+          Back to Orders
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -73,7 +142,7 @@ const OrderDetail = () => {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <p className="text-sm text-gray-500">Order ID</p>
-                <p className="font-medium">{order.id}</p>
+                <p className="font-medium">{order.orderId || order._id}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-500">Order Type</p>
@@ -81,11 +150,19 @@ const OrderDetail = () => {
               </div>
               <div>
                 <p className="text-sm text-gray-500">Order Date</p>
-                <p className="font-medium">{order.date}</p>
+                <p className="font-medium">{new Date(order.createdAt || order.orderDate).toLocaleDateString('en-IN')}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-500">Due Date</p>
-                <p className="font-medium">{order.dueDate}</p>
+                <p className="font-medium">{new Date(order.deliveryDate).toLocaleDateString('en-IN')}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Product</p>
+                <p className="font-medium">{order.product}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Total Items</p>
+                <p className="font-medium">{calculateItemsCount(order)} pieces</p>
               </div>
             </div>
           </div>
@@ -94,9 +171,10 @@ const OrderDetail = () => {
           <div className="bg-white rounded-lg shadow p-6">
             <h3 className="text-lg font-semibold mb-4">Customer Details</h3>
             <div className="space-y-2">
-              <p className="font-medium">{order.customer}</p>
-              <p className="text-sm text-gray-600">{order.phone}</p>
-              <p className="text-sm text-gray-600">{order.email}</p>
+              <p className="font-medium">{order.customerName}</p>
+              <p className="text-sm text-gray-600">{order.mobileNumber}</p>
+              {order.email && <p className="text-sm text-gray-600">{order.email}</p>}
+              {order.address && <p className="text-sm text-gray-600">{order.address}</p>}
             </div>
           </div>
 
@@ -109,28 +187,34 @@ const OrderDetail = () => {
                   <tr>
                     <th className="text-left py-2 text-sm font-medium text-gray-700">Product</th>
                     <th className="text-left py-2 text-sm font-medium text-gray-700">Size</th>
-                    <th className="text-left py-2 text-sm font-medium text-gray-700">Color</th>
-                    <th className="text-left py-2 text-sm font-medium text-gray-700">Qty</th>
+                    <th className="text-left py-2 text-sm font-medium text-gray-700">Quantity</th>
                     <th className="text-right py-2 text-sm font-medium text-gray-700">Price</th>
                     <th className="text-right py-2 text-sm font-medium text-gray-700">Total</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
-                  {order.items.map((item, index) => (
-                    <tr key={index}>
-                      <td className="py-3 text-sm">{item.product}</td>
-                      <td className="py-3 text-sm">{item.size}</td>
-                      <td className="py-3 text-sm">{item.color}</td>
-                      <td className="py-3 text-sm">{item.quantity}</td>
-                      <td className="py-3 text-sm text-right">₹{item.price}</td>
-                      <td className="py-3 text-sm text-right">₹{item.price * item.quantity}</td>
-                    </tr>
-                  ))}
+                  {order.items && order.items.map((item, index) => {
+                    if (!item.sizes) return null;
+                    
+                    return Object.entries(item.sizes).map(([size, sizeData]) => {
+                      if (sizeData.quantity === 0) return null;
+                      
+                      return (
+                        <tr key={`${index}-${size}`}>
+                          <td className="py-3 text-sm">{item.product || item.category}</td>
+                          <td className="py-3 text-sm">{size}</td>
+                          <td className="py-3 text-sm">{sizeData.quantity}</td>
+                          <td className="py-3 text-sm text-right">₹{sizeData.price}</td>
+                          <td className="py-3 text-sm text-right">₹{(sizeData.quantity * sizeData.price).toFixed(2)}</td>
+                        </tr>
+                      );
+                    });
+                  })}
                 </tbody>
                 <tfoot className="border-t">
                   <tr>
-                    <td colSpan="5" className="py-3 text-sm font-medium text-right">Total:</td>
-                    <td className="py-3 text-sm font-bold text-right">₹{order.payment.total}</td>
+                    <td colSpan="4" className="py-3 text-sm font-medium text-right">Total:</td>
+                    <td className="py-3 text-sm font-bold text-right">₹{calculateOrderTotal(order).toFixed(2)}</td>
                   </tr>
                 </tfoot>
               </table>
@@ -164,17 +248,37 @@ const OrderDetail = () => {
             <div className="space-y-3">
               <div className="flex justify-between">
                 <span className="text-sm text-gray-600">Total Amount</span>
-                <span className="font-medium">₹{order.payment.total}</span>
+                <span className="font-medium">₹{calculateOrderTotal(order).toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-sm text-gray-600">Paid Amount</span>
-                <span className="font-medium text-green-600">₹{order.payment.paid}</span>
+                <span className="text-sm text-gray-600">Advance Paid</span>
+                <span className="font-medium text-green-600">
+                  ₹{order.advancePayments ? order.advancePayments.reduce((total, payment) => total + (payment.amount || 0), 0).toFixed(2) : '0.00'}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-sm text-gray-600">Due Amount</span>
-                <span className="font-medium text-red-600">₹{order.payment.due}</span>
+                <span className="font-medium text-red-600">
+                  ₹{(calculateOrderTotal(order) - (order.advancePayments ? order.advancePayments.reduce((total, payment) => total + (payment.amount || 0), 0) : 0)).toFixed(2)}
+                </span>
               </div>
             </div>
+            
+            {/* Advance Payments List */}
+            {order.advancePayments && order.advancePayments.length > 0 && (
+              <div className="mt-4">
+                <h4 className="text-sm font-medium text-gray-700 mb-2">Advance Payments</h4>
+                <div className="space-y-1">
+                  {order.advancePayments.map((payment, index) => (
+                    <div key={index} className="flex justify-between text-xs text-gray-600">
+                      <span>₹{payment.amount?.toFixed(2) || '0.00'}</span>
+                      <span>{new Date(payment.date).toLocaleDateString('en-IN')}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
             <button className="w-full mt-4 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">
               Record Payment
             </button>

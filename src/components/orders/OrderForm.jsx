@@ -77,6 +77,9 @@ const OrderForm = () => {
     if (!payload.customerName?.trim()) {
       return 'Customer name is required';
     }
+    if (!payload.address?.trim()) {
+      return 'Address is required';
+    }
     if (!payload.deliveryDate) {
       return 'Delivery date is required';
     }
@@ -103,15 +106,18 @@ const OrderForm = () => {
       const payload = {
         orderId: formData.orderId, // Include the generated order ID
         customerName: formData.customer,
+        address: formData.address, // Add address field
         deliveryDate: formData.dueDate ? new Date(formData.dueDate).toISOString() : '',
         product: validItems.length > 0 ? validItems[0].product : '', // First product as direct field
         items: validItems.map(item => ({
           product: item.product,
-          sizes: item.sizes
+          sizes: item.sizes,
+          details: item.details || {} // Include product details
         })),
         orderType: formData.orderType || 'walk-in',
         phone: formData.phone || '', // Backend expects 'phone', not 'mobileNumber'
-        email: formData.email || ''
+        email: formData.email || '',
+        advancePayments: formData.advancePayments || [] // Include advance payments
       };
 
       const validationError = validatePayload(payload);
@@ -120,27 +126,20 @@ const OrderForm = () => {
         return;
       }
 
-      // Debug: Log the payload
-      console.log('Sending payload:', payload);
-
       let result;
       if (orderImage) {
         const fd = new FormData();
         fd.append('orderId', payload.orderId);
         fd.append('customerName', payload.customerName);
+        fd.append('address', payload.address);
         fd.append('deliveryDate', payload.deliveryDate);
         fd.append('product', payload.product);
         fd.append('orderType', payload.orderType);
         if (payload.phone) fd.append('phone', payload.phone);
         if (payload.email) fd.append('email', payload.email);
         fd.append('items', JSON.stringify(payload.items));
+        fd.append('advancePayments', JSON.stringify(payload.advancePayments));
         fd.append('orderImage', orderImage);
-        
-        // Debug: Log FormData contents
-        console.log('FormData contents:');
-        for (let [key, value] of fd.entries()) {
-          console.log(key, value);
-        }
         
         result = await ApiService.createOrder(fd);
       } else {
