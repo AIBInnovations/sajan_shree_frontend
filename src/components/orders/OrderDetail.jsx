@@ -106,8 +106,42 @@ const OrderDetail = () => {
     );
   }
 
+  // Get all unique sizes from all items
+  const getAllUniqueSizes = () => {
+    const allSizes = new Set();
+    if (order.items) {
+      order.items.forEach(item => {
+        if (item.sizes) {
+          Object.keys(item.sizes).forEach(size => allSizes.add(size));
+        }
+      });
+    }
+    return Array.from(allSizes).sort((a, b) => {
+      const numA = parseInt(a.split('/')[0]);
+      const numB = parseInt(b.split('/')[0]);
+      return numA - numB;
+    });
+  };
+
+  // Calculate pieces for a single item
+  const calculateItemPieces = (item) => {
+    if (!item.sizes) return 0;
+    return Object.values(item.sizes).reduce((total, size) => {
+      return total + (size.quantity || 0);
+    }, 0);
+  };
+
+  // Calculate total for a single item
+  const calculateItemTotal = (item) => {
+    if (!item.sizes) return 0;
+    return Object.values(item.sizes).reduce((total, size) => {
+      return total + ((size.quantity || 0) * (size.price || 0));
+    }, 0);
+  };
+
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <button
@@ -134,155 +168,248 @@ const OrderDetail = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
-          {/* Order Info */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold mb-4">Order Information</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm text-gray-500">Order ID</p>
-                <p className="font-medium">{order.orderId || order._id}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Order Type</p>
-                <p className="font-medium capitalize">{order.orderType}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Order Date</p>
-                <p className="font-medium">{new Date(order.createdAt || order.orderDate).toLocaleDateString('en-IN')}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Due Date</p>
-                <p className="font-medium">{new Date(order.deliveryDate).toLocaleDateString('en-IN')}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Product</p>
-                <p className="font-medium">{order.product}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Total Items</p>
-                <p className="font-medium">{calculateItemsCount(order)} pieces</p>
-              </div>
-            </div>
+      {/* Customer Information Section */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <div className="grid grid-cols-2 gap-2 items-center mb-4">
+          <div className="row-span-2 h-full">
+            <h3 className="text-lg font-medium text-gray-900">Customer Information</h3>
+          </div>
+          <div className="text-sm text-gray-600 text-right">
+            <span className="font-semibold">Order ID:</span> {order.orderId || order._id}
+          </div>
+          <div className="text-sm text-gray-600 text-right">
+            <span className="font-semibold">Order Date:</span> {new Date(order.createdAt || order.orderDate).toLocaleString('en-IN', {
+              day: '2-digit',
+              month: '2-digit',
+              year: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit',
+              hour12: true
+            })}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-4 gap-4">
+          {/* First Row */}
+          <div className="col-span-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Customer Name
+            </label>
+            <p className="px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-sm">
+              {order.customerName}
+            </p>
           </div>
 
-          {/* Customer Info */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold mb-4">Customer Details</h3>
-            <div className="space-y-2">
-              <p className="font-medium">{order.customerName}</p>
-              <p className="text-sm text-gray-600">{order.mobileNumber}</p>
-              {order.email && <p className="text-sm text-gray-600">{order.email}</p>}
-              {order.address && <p className="text-sm text-gray-600">{order.address}</p>}
-            </div>
+          <div className="col-span-3">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Address
+            </label>
+            <p className="px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-sm">
+              {order.address || 'N/A'}
+            </p>
           </div>
 
-          {/* Order Items */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold mb-4">Order Items</h3>
+          {/* Second Row */}
+          <div className="col-span-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Phone Number
+            </label>
+            <p className="px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-sm">
+              {order.mobileNumber || order.phone || 'N/A'}
+            </p>
+          </div>
+
+          <div className="col-span-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Email
+            </label>
+            <p className="px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-sm">
+              {order.email || 'N/A'}
+            </p>
+          </div>
+
+          <div className="col-span-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Order Type
+            </label>
+            <p className="px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-sm capitalize">
+              {order.orderType}
+            </p>
+          </div>
+
+          <div className="col-span-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Due Date
+            </label>
+            <p className="px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-sm">
+              {new Date(order.deliveryDate).toLocaleDateString('en-IN')}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Order Items Matrix */}
+      <div>
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-medium text-gray-900">Order Items</h3>
+          <div className="flex items-center space-x-4">
+            <span className="text-sm text-gray-600">
+              Status: <OrderStatusBadge status={status} />
+            </span>
+          </div>
+        </div>
+
+        {order.items && order.items.map((item, index) => (
+          <div key={index} className="mb-4 rounded-lg border border-gray-200 overflow-hidden">
+            {/* Product Header */}
+            <div className="bg-white px-4 py-3 flex justify-between items-center">
+              <div className="font-medium text-gray-900">{item.product || item.category}</div>
+              <div className="flex items-center space-x-4">
+                <span className="text-gray-500 text-sm">
+                  Pieces: {calculateItemPieces(item)}
+                </span>
+                <span className="text-gray-700 font-bold text-sm">
+                  Total: ₹{calculateItemTotal(item).toFixed(2)}
+                </span>
+              </div>
+            </div>
+
+            {/* Size Matrix */}
             <div className="overflow-x-auto">
-              <table className="min-w-full">
-                <thead className="border-b">
+              <table className="min-w-full text-xs">
+                <thead className="bg-gray-50">
                   <tr>
-                    <th className="text-left py-2 text-sm font-medium text-gray-700">Product</th>
-                    <th className="text-left py-2 text-sm font-medium text-gray-700">Size</th>
-                    <th className="text-left py-2 text-sm font-medium text-gray-700">Quantity</th>
-                    <th className="text-right py-2 text-sm font-medium text-gray-700">Price</th>
-                    <th className="text-right py-2 text-sm font-medium text-gray-700">Total</th>
+                    <th className="px-3 py-2 text-center text-xs font-semibold text-gray-700 bg-blue-50">SIZE</th>
+                    {item.sizes && Object.keys(item.sizes).sort((a, b) => {
+                      const numA = parseInt(a.split('/')[0]);
+                      const numB = parseInt(b.split('/')[0]);
+                      return numA - numB;
+                    }).map(size => (
+                      <th key={`${index}-${size}`} className="px-2 py-2 text-center font-semibold text-gray-700">
+                        {size}
+                      </th>
+                    ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y">
-                  {order.items && order.items.map((item, index) => {
-                    if (!item.sizes) return null;
-                    
-                    return Object.entries(item.sizes).map(([size, sizeData]) => {
-                      if (sizeData.quantity === 0) return null;
-                      
-                      return (
-                        <tr key={`${index}-${size}`}>
-                          <td className="py-3 text-sm">{item.product || item.category}</td>
-                          <td className="py-3 text-sm">{size}</td>
-                          <td className="py-3 text-sm">{sizeData.quantity}</td>
-                          <td className="py-3 text-sm text-right">₹{sizeData.price}</td>
-                          <td className="py-3 text-sm text-right">₹{(sizeData.quantity * sizeData.price).toFixed(2)}</td>
-                        </tr>
-                      );
-                    });
-                  })}
-                </tbody>
-                <tfoot className="border-t">
-                  <tr>
-                    <td colSpan="4" className="py-3 text-sm font-medium text-right">Total:</td>
-                    <td className="py-3 text-sm font-bold text-right">₹{calculateOrderTotal(order).toFixed(2)}</td>
+                <tbody>
+                  <tr className="hover:bg-gray-50">
+                    <td className="px-2 py-2 text-center text-xs font-medium text-gray-700 bg-blue-50">QTY</td>
+                    {item.sizes && Object.keys(item.sizes).sort((a, b) => {
+                      const numA = parseInt(a.split('/')[0]);
+                      const numB = parseInt(b.split('/')[0]);
+                      return numA - numB;
+                    }).map(size => (
+                      <td key={`${index}-${size}-qty`} className="px-2 py-2 text-center font-medium">
+                        {item.sizes[size]?.quantity || 0}
+                      </td>
+                    ))}
                   </tr>
-                </tfoot>
+                  <tr className="hover:bg-gray-50">
+                    <td className="px-2 py-2 text-center text-xs font-medium text-gray-700 bg-blue-50">PRICE</td>
+                    {item.sizes && Object.keys(item.sizes).sort((a, b) => {
+                      const numA = parseInt(a.split('/')[0]);
+                      const numB = parseInt(b.split('/')[0]);
+                      return numA - numB;
+                    }).map(size => (
+                      <td key={`${index}-${size}-price`} className="px-2 py-2 text-center font-medium">
+                        ₹{item.sizes[size]?.price || 0}
+                      </td>
+                    ))}
+                  </tr>
+                </tbody>
               </table>
+            </div>
+
+            {/* Product Details if available */}
+            {item.details && Object.keys(item.details).length > 0 && (
+              <div className="p-4 bg-gray-50 border-t border-gray-200">
+                <h4 className="text-sm font-medium text-gray-700 mb-2">Product Details</h4>
+                <div className="grid grid-cols-4 gap-4">
+                  {Object.entries(item.details).map(([key, value]) => {
+                    // Skip image fields
+                    if (key.includes('Image')) return null;
+                    return (
+                      <div key={key} className="text-xs">
+                        <span className="text-gray-600 capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}:</span>
+                        <span className="ml-2 font-medium text-gray-900">{value}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+
+        {/* Grand Total */}
+        <div className="flex justify-end border-t border-gray-200 pt-4 mt-4">
+          <div className="flex space-x-8 text-right">
+            <div>
+              <div className="text-sm text-gray-600">Total Pieces:</div>
+              <div className="text-xl font-semibold text-gray-800">{calculateItemsCount(order)}</div>
+            </div>
+            <div>
+              <div className="text-sm text-gray-600">Grand Total:</div>
+              <div className="text-2xl font-bold text-gray-900">₹{calculateOrderTotal(order).toFixed(2)}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Payment Information */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <h3 className="text-lg font-semibold mb-4">Payment Information</h3>
+        <div className="grid grid-cols-3 gap-6">
+          <div>
+            <div className="text-sm text-gray-600 mb-1">Total Amount</div>
+            <div className="text-xl font-bold text-gray-900">₹{calculateOrderTotal(order).toFixed(2)}</div>
+          </div>
+          <div>
+            <div className="text-sm text-gray-600 mb-1">Advance Paid</div>
+            <div className="text-xl font-bold text-green-600">
+              ₹{order.advancePayments ? order.advancePayments.reduce((total, payment) => total + (payment.amount || 0), 0).toFixed(2) : '0.00'}
+            </div>
+          </div>
+          <div>
+            <div className="text-sm text-gray-600 mb-1">Due Amount</div>
+            <div className="text-xl font-bold text-red-600">
+              ₹{(calculateOrderTotal(order) - (order.advancePayments ? order.advancePayments.reduce((total, payment) => total + (payment.amount || 0), 0) : 0)).toFixed(2)}
             </div>
           </div>
         </div>
 
-        <div className="space-y-6">
-          {/* Status Update */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold mb-4">Order Status</h3>
-            <div className="mb-4">
-              <OrderStatusBadge status={status} />
-            </div>
-            <select
-              value={status}
-              onChange={(e) => updateStatus(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              {statuses.map(s => (
-                <option key={s} value={s}>
-                  {s.charAt(0).toUpperCase() + s.slice(1).replace('-', ' ')}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Payment Status */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold mb-4">Payment Status</h3>
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <span className="text-sm text-gray-600">Total Amount</span>
-                <span className="font-medium">₹{calculateOrderTotal(order).toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-gray-600">Advance Paid</span>
-                <span className="font-medium text-green-600">
-                  ₹{order.advancePayments ? order.advancePayments.reduce((total, payment) => total + (payment.amount || 0), 0).toFixed(2) : '0.00'}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-gray-600">Due Amount</span>
-                <span className="font-medium text-red-600">
-                  ₹{(calculateOrderTotal(order) - (order.advancePayments ? order.advancePayments.reduce((total, payment) => total + (payment.amount || 0), 0) : 0)).toFixed(2)}
-                </span>
-              </div>
-            </div>
-            
-            {/* Advance Payments List */}
-            {order.advancePayments && order.advancePayments.length > 0 && (
-              <div className="mt-4">
-                <h4 className="text-sm font-medium text-gray-700 mb-2">Advance Payments</h4>
-                <div className="space-y-1">
-                  {order.advancePayments.map((payment, index) => (
-                    <div key={index} className="flex justify-between text-xs text-gray-600">
-                      <span>₹{payment.amount?.toFixed(2) || '0.00'}</span>
-                      <span>{new Date(payment.date).toLocaleDateString('en-IN')}</span>
-                    </div>
-                  ))}
+        {/* Advance Payments List */}
+        {order.advancePayments && order.advancePayments.length > 0 && (
+          <div className="mt-6">
+            <h4 className="text-sm font-medium text-gray-700 mb-3">Payment History</h4>
+            <div className="space-y-2">
+              {order.advancePayments.map((payment, index) => (
+                <div key={index} className="flex justify-between items-center px-3 py-2 bg-gray-50 rounded-md">
+                  <span className="text-sm font-medium text-gray-900">₹{payment.amount?.toFixed(2) || '0.00'}</span>
+                  <span className="text-sm text-gray-600">{new Date(payment.date).toLocaleDateString('en-IN')}</span>
                 </div>
-              </div>
-            )}
-            
-            <button className="w-full mt-4 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">
-              Record Payment
-            </button>
+              ))}
+            </div>
           </div>
+        )}
+
+        <div className="mt-6 flex justify-between items-center">
+          <select
+            value={status}
+            onChange={(e) => updateStatus(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            {statuses.map(s => (
+              <option key={s} value={s}>
+                {s.charAt(0).toUpperCase() + s.slice(1).replace('-', ' ')}
+              </option>
+            ))}
+          </select>
+
+          <button className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">
+            Record Payment
+          </button>
         </div>
       </div>
     </div>

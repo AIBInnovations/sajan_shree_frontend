@@ -473,8 +473,7 @@ const OrderForm = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-4 gap-4">
-            {/* First Row */}
+          <div className="grid grid-cols-3 gap-4">
             <div className="col-span-1">
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Customer Name *
@@ -487,73 +486,6 @@ const OrderForm = () => {
                 required
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
               />
-            </div>
-
-            <div className="col-span-3">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Address *
-              </label>
-              <input
-                type="text"
-                name="address"
-                value={formData.address}
-                onChange={handleChange}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-              />
-            </div>
-
-            {/* Second Row */}
-            <div className="col-span-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Phone Number *
-              </label>
-              <input
-                type="tel"
-                name="phone"
-                value={formData.phone}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  if (/^\d{0,10}$/.test(val)) {
-                    handleChange(e);
-                  }
-                }}
-                required
-                maxLength="10"
-                inputMode="numeric"
-                pattern="\d*"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-              />
-            </div>
-
-            <div className="col-span-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Email
-              </label>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                placeholder="Optional"
-              />
-            </div>
-
-            <div className="col-span-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Order Type
-              </label>
-              <select
-                name="orderType"
-                value={formData.orderType}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-              >
-                <option value="walk-in">Walk-in</option>
-                <option value="phone">Phone</option>
-                <option value="online">Online</option>
-              </select>
             </div>
 
             <div className="col-span-1">
@@ -579,20 +511,6 @@ const OrderForm = () => {
                 accept="image/*"
                 onChange={(e) => setOrderImage(e.target.files && e.target.files[0] ? e.target.files[0] : null)}
                 className="w-full text-sm"
-              />
-            </div>
-
-            <div className="col-span-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Advance Paid (₹)
-              </label>
-              <input
-                type="text"
-                inputMode="decimal"
-                pattern="[0-9]*"
-                onBlur={(e) => handleAdvanceChange(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                placeholder="Enter Amount"
               />
             </div>
           </div>
@@ -706,6 +624,12 @@ const OrderForm = () => {
                       ])
                     }
 
+
+                  {item.product === 'Tunick' &&
+                    renderDetailFields(item, [
+                      { label: 'Color', key: 'color', options: ['White', 'Black', 'Blue', 'Red', 'Pink', 'Green', 'Yellow', 'Orange', 'Purple', 'Other'] },
+                    ])
+                  }
 
                   {item.product === 'Skirt' &&
                     renderDetailFields(item, [
