@@ -190,51 +190,13 @@ const OrderDetail = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-4 gap-4">
-          {/* First Row */}
+        <div className="grid grid-cols-2 gap-4">
           <div className="col-span-1">
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Customer Name
             </label>
             <p className="px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-sm">
               {order.customerName}
-            </p>
-          </div>
-
-          <div className="col-span-3">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Address
-            </label>
-            <p className="px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-sm">
-              {order.address || 'N/A'}
-            </p>
-          </div>
-
-          {/* Second Row */}
-          <div className="col-span-1">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Phone Number
-            </label>
-            <p className="px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-sm">
-              {order.mobileNumber || order.phone || 'N/A'}
-            </p>
-          </div>
-
-          <div className="col-span-1">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Email
-            </label>
-            <p className="px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-sm">
-              {order.email || 'N/A'}
-            </p>
-          </div>
-
-          <div className="col-span-1">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Order Type
-            </label>
-            <p className="px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-sm capitalize">
-              {order.orderType}
             </p>
           </div>
 
