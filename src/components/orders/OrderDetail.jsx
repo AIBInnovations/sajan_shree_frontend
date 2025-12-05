@@ -168,29 +168,20 @@ const OrderDetail = () => {
         </div>
       </div>
 
-      {/* Customer Information Section */}
+      {/* Order Information Section */}
       <div className="bg-white rounded-lg shadow p-6">
-        <div className="grid grid-cols-2 gap-2 items-center mb-4">
-          <div className="row-span-2 h-full">
-            <h3 className="text-lg font-medium text-gray-900">Customer Information</h3>
-          </div>
-          <div className="text-sm text-gray-600 text-right">
-            <span className="font-semibold">Order ID:</span> {order.orderId || order._id}
-          </div>
-          <div className="text-sm text-gray-600 text-right">
-            <span className="font-semibold">Order Date:</span> {new Date(order.createdAt || order.orderDate).toLocaleString('en-IN', {
-              day: '2-digit',
-              month: '2-digit',
-              year: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit',
-              second: '2-digit',
-              hour12: true
-            })}
-          </div>
-        </div>
+        <h3 className="text-lg font-medium text-gray-900 mb-4">Order Information</h3>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-4 gap-4">
+          <div className="col-span-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Order ID
+            </label>
+            <p className="px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-sm">
+              {order.orderId || order._id}
+            </p>
+          </div>
+
           <div className="col-span-1">
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Customer Name
@@ -202,12 +193,32 @@ const OrderDetail = () => {
 
           <div className="col-span-1">
             <label className="block text-sm font-medium text-gray-700 mb-1">
+              Order Date
+            </label>
+            <p className="px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-sm">
+              {new Date(order.orderDate || order.createdAt).toLocaleDateString('en-IN')}
+            </p>
+          </div>
+
+          <div className="col-span-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               Due Date
             </label>
             <p className="px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-sm">
               {new Date(order.deliveryDate).toLocaleDateString('en-IN')}
             </p>
           </div>
+
+          {order.orderDescription && (
+            <div className="col-span-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Description
+              </label>
+              <p className="px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-sm">
+                {order.orderDescription}
+              </p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -319,44 +330,10 @@ const OrderDetail = () => {
         </div>
       </div>
 
-      {/* Payment Information */}
+      {/* Order Status & Summary */}
       <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold mb-4">Payment Information</h3>
-        <div className="grid grid-cols-3 gap-6">
-          <div>
-            <div className="text-sm text-gray-600 mb-1">Total Amount</div>
-            <div className="text-xl font-bold text-gray-900">₹{calculateOrderTotal(order).toFixed(2)}</div>
-          </div>
-          <div>
-            <div className="text-sm text-gray-600 mb-1">Advance Paid</div>
-            <div className="text-xl font-bold text-green-600">
-              ₹{order.advancePayments ? order.advancePayments.reduce((total, payment) => total + (payment.amount || 0), 0).toFixed(2) : '0.00'}
-            </div>
-          </div>
-          <div>
-            <div className="text-sm text-gray-600 mb-1">Due Amount</div>
-            <div className="text-xl font-bold text-red-600">
-              ₹{(calculateOrderTotal(order) - (order.advancePayments ? order.advancePayments.reduce((total, payment) => total + (payment.amount || 0), 0) : 0)).toFixed(2)}
-            </div>
-          </div>
-        </div>
-
-        {/* Advance Payments List */}
-        {order.advancePayments && order.advancePayments.length > 0 && (
-          <div className="mt-6">
-            <h4 className="text-sm font-medium text-gray-700 mb-3">Payment History</h4>
-            <div className="space-y-2">
-              {order.advancePayments.map((payment, index) => (
-                <div key={index} className="flex justify-between items-center px-3 py-2 bg-gray-50 rounded-md">
-                  <span className="text-sm font-medium text-gray-900">₹{payment.amount?.toFixed(2) || '0.00'}</span>
-                  <span className="text-sm text-gray-600">{new Date(payment.date).toLocaleDateString('en-IN')}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        <div className="mt-6 flex justify-between items-center">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-semibold">Order Status & Summary</h3>
           <select
             value={status}
             onChange={(e) => updateStatus(e.target.value)}
@@ -368,10 +345,17 @@ const OrderDetail = () => {
               </option>
             ))}
           </select>
+        </div>
 
-          <button className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">
-            Record Payment
-          </button>
+        <div className="grid grid-cols-2 gap-6">
+          <div className="p-4 bg-blue-50 rounded-lg">
+            <div className="text-sm text-gray-600 mb-1">Total Pieces</div>
+            <div className="text-2xl font-bold text-gray-900">{calculateItemsCount(order)}</div>
+          </div>
+          <div className="p-4 bg-green-50 rounded-lg">
+            <div className="text-sm text-gray-600 mb-1">Total Amount</div>
+            <div className="text-2xl font-bold text-gray-900">₹{calculateOrderTotal(order).toFixed(2)}</div>
+          </div>
         </div>
       </div>
     </div>

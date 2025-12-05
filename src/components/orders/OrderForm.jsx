@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Save, X, Plus, Trash2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { Save, X, Plus, Trash2, Upload, Image as ImageIcon } from 'lucide-react';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { useNavigate } from 'react-router-dom';
@@ -9,23 +9,12 @@ import ApiService from '../../services/api';
 const OrderForm = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-  orderId: '',
-  createdAt: '',
   customer: '',
-  phone: '',
-  email: '',
-  address: '',
   dueDate: '',
-  orderType: 'walk-in',
-  advancePayments: [
-    {
-      amount: 0,
-      date: new Date().toISOString()
-    }
-  ],
+  orderDescription: '',
   items: [
-    { 
-      id: 1, 
+    {
+      id: 1,
       product: 'Pant Elastic',
       sizes: {
         '20': { quantity: 0, price: 299 },
@@ -58,20 +47,9 @@ const OrderForm = () => {
 
   const products = Object.keys(productSizeMapping);
 
-  const handleAdvanceChange = (amount) => {
-  const newEntry = {
-    amount: parseFloat(amount) || 0,
-    date: new Date().toISOString()
-  };
-  setFormData(prev => ({
-    ...prev,
-    advancePayments: [...prev.advancePayments, newEntry]
-  }));
-};
 
 
   const [orderImage, setOrderImage] = useState(null);
-  const [currentTime, setCurrentTime] = useState(new Date());
 
   const validatePayload = (payload) => {
     if (!payload.customerName?.trim()) {
@@ -96,9 +74,8 @@ const OrderForm = () => {
   const handleSubmit = async () => {
     try {
       const validItems = formData.items.filter(item => item.product && item.product.trim() !== '');
-      
+
       const payload = {
-        orderId: formData.orderId, // Include the generated order ID
         customerName: formData.customer,
         deliveryDate: formData.dueDate ? new Date(formData.dueDate).toISOString() : '',
         product: validItems.length > 0 ? validItems[0].product : '', // First product as direct field
@@ -107,7 +84,7 @@ const OrderForm = () => {
           sizes: item.sizes,
           details: item.details || {} // Include product details
         })),
-        orderType: 'walk-in' // Default order type
+        orderDescription: formData.orderDescription || ''
       };
 
       const validationError = validatePayload(payload);
@@ -119,12 +96,13 @@ const OrderForm = () => {
       let result;
       if (orderImage) {
         const fd = new FormData();
-        fd.append('orderId', payload.orderId);
         fd.append('customerName', payload.customerName);
         fd.append('deliveryDate', payload.deliveryDate);
         fd.append('product', payload.product);
-        fd.append('orderType', payload.orderType);
         fd.append('items', JSON.stringify(payload.items));
+        if (payload.orderDescription) {
+          fd.append('orderDescription', payload.orderDescription);
+        }
         fd.append('orderImage', orderImage);
 
         result = await ApiService.createOrder(fd);
@@ -137,13 +115,13 @@ const OrderForm = () => {
       navigate('/orders');
     } catch (error) {
       console.error("Create order error:", error);
-      
+
       if (error.message.includes("Authentication required")) {
         alert("❌ Please login to create an order.");
         navigate('/login');
         return;
       }
-      
+
       const message = error?.payload?.message || error.message || 'Server Error. Please try again.';
       alert(`❌ ${message}`);
     }
@@ -280,7 +258,7 @@ const OrderForm = () => {
 };
 
     const handleGeneratePDF = () => {
-      const { customer, phone, address, dueDate, orderType, items, advancePayments } = formData;
+      const { customer, dueDate, items, orderDescription } = formData;
       const doc = new jsPDF();
 
       doc.setFontSize(16);
@@ -288,53 +266,49 @@ const OrderForm = () => {
 
       doc.setFontSize(12);
       doc.text(`Customer Name: ${customer}`, 14, 30);
-      doc.text(`Address: ${address}`, 14, 38);
-      doc.text(`Phone: ${phone}`, 14, 46);
-      doc.text(`Order Type: ${orderType}`, 14, 54);
-      doc.text(`Due Date: ${dueDate}`, 14, 62);
+      doc.text(`Due Date: ${dueDate}`, 14, 38);
+      if (orderDescription) {
+        doc.text(`Description: ${orderDescription}`, 14, 46);
+      }
 
-      doc.text('Advance Payments:', 14, 72);
-      advancePayments.forEach((p, idx) => {
-        doc.text(`• ₹${p.amount} on ${new Date(p.date).toLocaleDateString()}`, 20, 80 + (idx * 8));
-      });
-
-      let y = 90 + (advancePayments.length * 8);
+      let y = orderDescription ? 56 : 48;
 
       doc.text('Order Items:', 14, y);
       y += 10;
 
       items.forEach((item, idx) => {
-      doc.text(`${idx + 1}. Product: ${item.product}`, 14, y);
-      y += 7;
+        doc.text(`${idx + 1}. Product: ${item.product}`, 14, y);
+        y += 7;
 
-      const orderedSizes = Object.entries(item.sizes).filter(
-        ([_, data]) => data.quantity > 0
-      );
+        const orderedSizes = Object.entries(item.sizes).filter(
+          ([_, data]) => data.quantity > 0
+        );
 
-      if (orderedSizes.length === 0) {
-        doc.text('   - No quantities ordered.', 14, y);
-        y += 6;
-      } else {
-        orderedSizes.forEach(([size, data]) => {
-          doc.text(
-            `   - Size: ${size} | Qty: ${data.quantity} | Price: ₹${data.price} | Total: ₹${(data.quantity * data.price).toFixed(2)}`,
-            14,
-            y
-          );
+        if (orderedSizes.length === 0) {
+          doc.text('   - No quantities ordered.', 14, y);
           y += 6;
-        });
-      }
+        } else {
+          orderedSizes.forEach(([size, data]) => {
+            doc.text(
+              `   - Size: ${size} | Qty: ${data.quantity} | Price: ₹${data.price} | Total: ₹${(data.quantity * data.price).toFixed(2)}`,
+              14,
+              y
+            );
+            y += 6;
+          });
+        }
 
-      if (item.details) {
-        Object.entries(item.details).forEach(([key, val]) => {
-          doc.text(`   - ${key}: ${val}`, 14, y);
-          y += 6;
-        });
-      }
+        if (item.details) {
+          Object.entries(item.details).forEach(([key, val]) => {
+            if (!key.includes('Image')) {
+              doc.text(`   - ${key}: ${val}`, 14, y);
+              y += 6;
+            }
+          });
+        }
 
-      y += 5;
-    });
-
+        y += 5;
+      });
 
       doc.setFontSize(14);
       doc.text(`Grand Total: ₹${calculateGrandTotal()}`, 14, y);
@@ -346,13 +320,13 @@ const OrderForm = () => {
         <div className="w-full px-2 py-2 border-t border-gray-200">
           <div className="flex flex-wrap items-start gap-6 w-full">
             {fields.map((field) => (
-              <div key={field.key} className="flex flex-col space-y-1 w-48">
+              <div key={field.key} className="flex flex-col space-y-2 w-48">
                 <label className="text-xs font-medium text-gray-700">{field.label}</label>
                 <div className="flex items-center space-x-2">
                   <select
                     value={item.details?.[field.key] || ''}
                     onChange={(e) => handleProductDetailsChange(item.id, field.key, e.target.value)}
-                    className="flex-1 px-2 py-1 border border-gray-300 rounded text-xs focus:ring-1 focus:ring-blue-400"
+                    className="flex-1 px-2 py-1.5 border border-gray-300 rounded text-xs focus:ring-1 focus:ring-blue-400 focus:border-blue-400"
                   >
                     <option value="">Select</option>
                     {field.options.map(opt => (
@@ -360,10 +334,8 @@ const OrderForm = () => {
                     ))}
                   </select>
 
-                  <label className="w-8 h-8 flex items-center justify-center border border-gray-300 rounded cursor-pointer hover:bg-gray-100">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                    </svg>
+                  <label className="w-8 h-8 flex items-center justify-center border-2 border-dashed border-gray-300 rounded cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors group">
+                    <Upload className="h-4 w-4 text-gray-400 group-hover:text-blue-500" />
                     <input
                       type="file"
                       accept="image/*"
@@ -383,17 +355,23 @@ const OrderForm = () => {
                 </div>
 
                 {item.details?.[`${field.key}Image`] && (
-                  <div className="relative mt-1 w-16 h-16">
-                    <img src={item.details[`${field.key}Image`]} alt="Preview" className="w-16 h-16 object-cover rounded border border-gray-200" />
+                  <div className="relative mt-1 w-20 h-20 group">
+                    <img
+                      src={item.details[`${field.key}Image`]}
+                      alt={`${field.label} preview`}
+                      className="w-20 h-20 object-cover rounded-md border-2 border-gray-200"
+                    />
                     <button
                       type="button"
                       onClick={() => handleProductDetailsChange(item.id, `${field.key}Image`, '')}
-                      className="absolute top-0 right-0 bg-white text-red-500 rounded-full border p-0.5 hover:bg-gray-100 transform translate-x-1/2 -translate-y-1/2"
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 shadow-md transition-all opacity-0 group-hover:opacity-100"
+                      title="Remove image"
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
+                      <X className="h-3 w-3" />
                     </button>
+                    <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-[10px] px-1 py-0.5 rounded-b-md text-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      Click X to remove
+                    </div>
                   </div>
                 )}
               </div>
@@ -407,27 +385,7 @@ const OrderForm = () => {
       };
 
 
-      useEffect(() => {
-          const generateOrderId = () => {
-            const random = Math.floor(1000 + Math.random() * 9000); // random 4-digit number
-            return `ORD-${random}`;
-          };
 
-          setFormData((prev) => ({
-            ...prev,
-            orderId: generateOrderId(),
-            createdAt: new Date().toISOString()
-          }));
-        }, []);
-
-      // Real-time clock effect
-      useEffect(() => {
-        const timer = setInterval(() => {
-          setCurrentTime(new Date());
-        }, 1000);
-
-        return () => clearInterval(timer);
-      }, []);
 
 
   return (
@@ -439,27 +397,9 @@ const OrderForm = () => {
       <div className="space-y-6">
         {/* Customer Information Section */}
         <div className="bg-white rounded-lg shadow p-6">
-          <div className="grid grid-cols-2 gap-2 items-center">
-            <div className="row-span-2 h-full ">
-              <h3 className="text-lg font-medium text-gray-900">Customer Information</h3>
-            </div>
-            <div className="text-sm text-gray-600 text-right">
-              <span className="font-semibold">Order ID:</span> {formData.orderId}
-            </div>
-            <div className="text-sm text-gray-600 text-right">
-              <span className="font-semibold">Current Time:</span> {currentTime.toLocaleString('en-IN', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-                hour12: true
-              })}
-            </div>
-          </div>
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Order Information</h3>
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-4 gap-4">
             <div className="col-span-1">
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Customer Name *
@@ -492,11 +432,51 @@ const OrderForm = () => {
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Order Image
               </label>
+              <div className="relative">
+                <label className="flex items-center justify-center px-4 py-2 border-2 border-dashed border-gray-300 rounded-md cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => setOrderImage(e.target.files && e.target.files[0] ? e.target.files[0] : null)}
+                    className="hidden"
+                  />
+                  {orderImage ? (
+                    <div className="flex items-center space-x-2">
+                      <ImageIcon className="w-5 h-5 text-green-600" />
+                      <span className="text-sm text-gray-700 truncate max-w-[150px]">{orderImage.name}</span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setOrderImage(null);
+                        }}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center space-x-2">
+                      <Upload className="w-5 h-5 text-gray-400" />
+                      <span className="text-sm text-gray-500">Upload Image</span>
+                    </div>
+                  )}
+                </label>
+              </div>
+            </div>
+
+            <div className="col-span-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Description (Optional)
+              </label>
               <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => setOrderImage(e.target.files && e.target.files[0] ? e.target.files[0] : null)}
-                className="w-full text-sm"
+                type="text"
+                name="orderDescription"
+                value={formData.orderDescription}
+                onChange={handleChange}
+                placeholder="Order notes..."
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
               />
             </div>
           </div>
