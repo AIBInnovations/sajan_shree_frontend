@@ -71,6 +71,7 @@ function App() {
 
                 <Route path="customers" element={<CustomerList />} />
                 <Route path="customers/new" element={<CustomerForm />} />
+                <Route path="customers/edit/:id" element={<CustomerForm />} />
                 <Route path="customers/:id" element={<CustomerDetail />} />
 
                 <Route path="suppliers" element={<SupplierList />} />

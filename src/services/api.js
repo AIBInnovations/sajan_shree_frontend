@@ -117,6 +117,40 @@ class ApiService {
     });
   }
 
+  // Customers
+  getCustomers(search) {
+    const query = search ? `?search=${encodeURIComponent(search)}` : "";
+    return this.request(`/customers${query}`);
+  }
+
+  getCustomer(id) {
+    return this.request(`/customers/${id}`);
+  }
+
+  getCustomerOrders(id) {
+    return this.request(`/customers/${id}/orders`);
+  }
+
+  createCustomer(data) {
+    return this.request("/customers", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  updateCustomer(id, data) {
+    return this.request(`/customers/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  }
+
+  deleteCustomer(id) {
+    return this.request(`/customers/${id}`, {
+      method: "DELETE",
+    });
+  }
+
   // User Authentication
   login(data) {
     return this.request("/users/login", {
