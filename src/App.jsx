@@ -59,6 +59,7 @@ function App() {
 
                 <Route path="orders" element={<OrderList />} />
                 <Route path="orders/new" element={<OrderForm />} />
+                <Route path="orders/edit/:id" element={<OrderForm />} />
                 <Route path="orders/:id" element={<OrderDetail />} />
 
                 <Route path="inventory" element={<InventoryList />} />

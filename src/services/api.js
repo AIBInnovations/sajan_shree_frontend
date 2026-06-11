@@ -56,15 +56,35 @@ class ApiService {
   }
 
   updateOrder(id, data) {
+    const isFormData = data instanceof FormData;
     return this.request(`/orders/${id}`, {
       method: "PUT",
-      body: JSON.stringify(data),
+      body: isFormData ? data : JSON.stringify(data),
     });
   }
 
   // Products
   getProducts() {
     return this.request("/products");
+  }
+
+  // Product configurations used by the order form (sizes + detail-field options)
+  getProductConfigs() {
+    return this.request("/products");
+  }
+
+  addProductOption(productName, detailKey, option) {
+    return this.request(`/products/${encodeURIComponent(productName)}/options`, {
+      method: "PATCH",
+      body: JSON.stringify({ detailKey, option }),
+    });
+  }
+
+  addProductSize(productName, size) {
+    return this.request(`/products/${encodeURIComponent(productName)}/sizes`, {
+      method: "PATCH",
+      body: JSON.stringify({ size }),
+    });
   }
 
   getProduct(id) {

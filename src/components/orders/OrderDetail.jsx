@@ -161,7 +161,10 @@ const OrderDetail = () => {
             <FileText className="w-4 h-4 mr-2" />
             Invoice
           </button>
-          <button className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+          <button
+            onClick={() => navigate(`/orders/edit/${order._id || order.orderId}`)}
+            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          >
             <Edit className="w-4 h-4 mr-2" />
             Edit
           </button>
@@ -217,6 +220,21 @@ const OrderDetail = () => {
               <p className="px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-sm">
                 {order.orderDescription}
               </p>
+            </div>
+          )}
+
+          {order.orderImage?.url && (
+            <div className="col-span-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Order Image
+              </label>
+              <a href={order.orderImage.url} target="_blank" rel="noopener noreferrer">
+                <img
+                  src={order.orderImage.url}
+                  alt="Order"
+                  className="w-48 h-48 object-cover rounded-md border border-gray-200 hover:opacity-90 transition-opacity"
+                />
+              </a>
             </div>
           )}
         </div>

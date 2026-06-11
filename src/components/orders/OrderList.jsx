@@ -1,7 +1,7 @@
 // components/orders/OrderList.jsx
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Search, Filter, Eye } from 'lucide-react';
+import { Plus, Search, Filter, Eye, Pencil } from 'lucide-react';
 import SearchBar from '../common/SearchBar';
 import FilterOptions from '../common/FilterOptions';
 import OrderStatusBadge from './OrderStatusBadge';
@@ -171,13 +171,22 @@ const OrderList = () => {
                       <OrderStatusBadge status={order.status} />
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap text-sm">
-                      <Link
-                        to={`/orders/${order._id || order.orderId}`}
-                        className="text-blue-600 hover:text-blue-900 inline-flex items-center"
-                      >
-                        <Eye className="w-4 h-4 mr-1" />
-                        View
-                      </Link>
+                      <div className="flex items-center space-x-4">
+                        <Link
+                          to={`/orders/${order._id || order.orderId}`}
+                          className="text-blue-600 hover:text-blue-900 inline-flex items-center"
+                        >
+                          <Eye className="w-4 h-4 mr-1" />
+                          View
+                        </Link>
+                        <Link
+                          to={`/orders/edit/${order._id || order.orderId}`}
+                          className="text-gray-600 hover:text-gray-900 inline-flex items-center"
+                        >
+                          <Pencil className="w-4 h-4 mr-1" />
+                          Edit
+                        </Link>
+                      </div>
                     </td>
                   </tr>
                 ))
