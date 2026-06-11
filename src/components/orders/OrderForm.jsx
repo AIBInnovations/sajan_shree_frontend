@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Save, X, Plus, Trash2, Upload, Image as ImageIcon } from 'lucide-react';
+import { Save, X, Plus, Trash2, Upload, Image as ImageIcon, Loader2 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -79,6 +79,9 @@ const OrderForm = () => {
   // Inline "add" UI state for custom sizes (#4) and custom options (#3).
   const [sizeAdd, setSizeAdd] = useState(null);       // { itemId, value }
   const [optionAdd, setOptionAdd] = useState(null);   // { itemId, fieldKey, value }
+
+  // Tracks an in-flight create/update request so the button can show progress.
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const products = Object.keys(sizeConfig);
 
@@ -181,6 +184,7 @@ const OrderForm = () => {
   };
 
   const handleSubmit = async () => {
+    if (isSubmitting) return;
     try {
       const validItems = formData.items.filter(item => item.product && item.product.trim() !== '');
 
@@ -201,6 +205,8 @@ const OrderForm = () => {
         alert(`❌ ${validationError}`);
         return;
       }
+
+      setIsSubmitting(true);
 
       // Only send multipart FormData when a NEW image file was chosen; otherwise send JSON
       // (on edit, sending JSON keeps the existing image untouched).
@@ -238,6 +244,8 @@ const OrderForm = () => {
 
       const message = error?.payload?.message || error.message || 'Server Error. Please try again.';
       alert(`❌ ${message}`);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -873,10 +881,20 @@ const OrderForm = () => {
           <button
             type="button"
             onClick={handleSubmit}
-            className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors inline-flex items-center"
+            disabled={isSubmitting}
+            className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors inline-flex items-center disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            <Save className="w-4 h-4 mr-2" />
-            {isEdit ? 'Update Order' : 'Create Order'}
+            {isSubmitting ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                {isEdit ? 'Updating...' : 'Creating...'}
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4 mr-2" />
+                {isEdit ? 'Update Order' : 'Create Order'}
+              </>
+            )}
           </button>
 
           <button onClick={handlePrintPage} className="px-4 py-2 bg-green-600 text-white rounded">
