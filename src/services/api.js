@@ -63,6 +63,12 @@ class ApiService {
     });
   }
 
+  deleteOrder(id) {
+    return this.request(`/orders/${id}`, {
+      method: "DELETE",
+    });
+  }
+
   // Products
   getProducts() {
     return this.request("/products");

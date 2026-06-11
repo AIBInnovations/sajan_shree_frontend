@@ -1,12 +1,13 @@
 // components/orders/OrderList.jsx
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Search, Filter, Eye, Pencil } from 'lucide-react';
+import { Plus, Search, Filter, Eye, Pencil, Trash2 } from 'lucide-react';
 import SearchBar from '../common/SearchBar';
 import FilterOptions from '../common/FilterOptions';
 import OrderStatusBadge from './OrderStatusBadge';
 import ApiService from '../../services/api';
 import LoadingSpinner from '../common/LoadingSpinner';
+import ConfirmDialog from '../common/ConfirmDialog';
 
 const OrderList = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -14,8 +15,25 @@ const OrderList = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [orderToDelete, setOrderToDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   const statuses = ['all', 'Pending', 'Processing', 'Completed', 'Shipped'];
+
+  const handleDeleteOrder = async () => {
+    if (!orderToDelete) return;
+    try {
+      setDeleting(true);
+      await ApiService.deleteOrder(orderToDelete._id || orderToDelete.orderId);
+      setOrders(prev => prev.filter(o => (o._id || o.orderId) !== (orderToDelete._id || orderToDelete.orderId)));
+      setOrderToDelete(null);
+    } catch (err) {
+      console.error('Error deleting order:', err);
+      alert(`❌ ${err?.payload?.message || err.message || 'Failed to delete order.'}`);
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   // Calculate total for an order
   const calculateOrderTotal = (order) => {
@@ -186,6 +204,14 @@ const OrderList = () => {
                           <Pencil className="w-4 h-4 mr-1" />
                           Edit
                         </Link>
+                        <button
+                          type="button"
+                          onClick={() => setOrderToDelete(order)}
+                          className="text-red-600 hover:text-red-900 inline-flex items-center"
+                        >
+                          <Trash2 className="w-4 h-4 mr-1" />
+                          Delete
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -195,6 +221,14 @@ const OrderList = () => {
           </table>
         </div>
       </div>
+
+      <ConfirmDialog
+        isOpen={!!orderToDelete}
+        onClose={() => { if (!deleting) setOrderToDelete(null); }}
+        onConfirm={handleDeleteOrder}
+        title="Delete Order"
+        message={`Are you sure you want to delete order ${orderToDelete?.orderId || orderToDelete?._id || ''}? This action cannot be undone.`}
+      />
     </div>
   );
 };

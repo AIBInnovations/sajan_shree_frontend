@@ -1,10 +1,11 @@
 // components/orders/OrderDetail.jsx
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Edit, Printer, FileText } from 'lucide-react';
+import { ArrowLeft, Edit, Printer, FileText, Trash2 } from 'lucide-react';
 import OrderStatusBadge from './OrderStatusBadge';
 import ApiService from '../../services/api';
 import LoadingSpinner from '../common/LoadingSpinner';
+import ConfirmDialog from '../common/ConfirmDialog';
 
 const OrderDetail = () => {
   const { id } = useParams();
@@ -13,8 +14,23 @@ const OrderDetail = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [status, setStatus] = useState('Pending');
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const statuses = ['Pending', 'Processing', 'Completed', 'Shipped'];
+
+  const handleDeleteOrder = async () => {
+    try {
+      setDeleting(true);
+      await ApiService.deleteOrder(order._id || order.orderId);
+      navigate('/orders');
+    } catch (err) {
+      console.error('Error deleting order:', err);
+      alert(`❌ ${err?.payload?.message || err.message || 'Failed to delete order.'}`);
+      setDeleting(false);
+      setConfirmDelete(false);
+    }
+  };
 
   // Calculate order total
   const calculateOrderTotal = (order) => {
@@ -167,6 +183,13 @@ const OrderDetail = () => {
           >
             <Edit className="w-4 h-4 mr-2" />
             Edit
+          </button>
+          <button
+            onClick={() => setConfirmDelete(true)}
+            className="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+          >
+            <Trash2 className="w-4 h-4 mr-2" />
+            Delete
           </button>
         </div>
       </div>
@@ -376,6 +399,14 @@ const OrderDetail = () => {
           </div>
         </div>
       </div>
+
+      <ConfirmDialog
+        isOpen={confirmDelete}
+        onClose={() => { if (!deleting) setConfirmDelete(false); }}
+        onConfirm={handleDeleteOrder}
+        title="Delete Order"
+        message={`Are you sure you want to delete order ${order.orderId || order._id}? This action cannot be undone.`}
+      />
     </div>
   );
 };
