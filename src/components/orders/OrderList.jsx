@@ -1,7 +1,7 @@
 // components/orders/OrderList.jsx
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Search, Filter, Eye, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Search, Filter, Eye, Pencil, Trash2, X } from 'lucide-react';
 import SearchBar from '../common/SearchBar';
 import FilterOptions from '../common/FilterOptions';
 import OrderStatusBadge from './OrderStatusBadge';
@@ -12,6 +12,13 @@ import ConfirmDialog from '../common/ConfirmDialog';
 const OrderList = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [productFilter, setProductFilter] = useState('');
+  const [sizeFilter, setSizeFilter] = useState('');
+  const [colorFilter, setColorFilter] = useState('');
+  const [customerFilter, setCustomerFilter] = useState('');
+  const [dueFrom, setDueFrom] = useState('');
+  const [dueTo, setDueTo] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -19,6 +26,31 @@ const OrderList = () => {
   const [deleting, setDeleting] = useState(false);
 
   const statuses = ['all', 'Pending', 'Processing', 'Completed', 'Shipped'];
+
+  // Build unique, sorted option lists from the loaded orders
+  const uniqueSorted = (values) => Array.from(new Set(values.filter(Boolean))).sort((a, b) => String(a).localeCompare(String(b)));
+  const productOptions = uniqueSorted(orders.flatMap(o => (o.items || []).map(i => i.product)));
+  const customerOptions = uniqueSorted(orders.map(o => o.customerName));
+  const colorOptions = uniqueSorted(orders.flatMap(o => (o.items || []).map(i => i.details?.color)));
+  const sizeOptions = uniqueSorted(
+    orders.flatMap(o => (o.items || []).flatMap(i =>
+      Object.entries(i.sizes || {}).filter(([, v]) => (v?.quantity || 0) > 0).map(([s]) => s)
+    ))
+  );
+
+  const activeFilterCount = [productFilter, sizeFilter, colorFilter, customerFilter, dueFrom, dueTo]
+    .filter(Boolean).length + (statusFilter !== 'all' ? 1 : 0);
+
+  const clearFilters = () => {
+    setStatusFilter('all');
+    setProductFilter('');
+    setSizeFilter('');
+    setColorFilter('');
+    setCustomerFilter('');
+    setDueFrom('');
+    setDueTo('');
+    setSearchTerm('');
+  };
 
   const handleDeleteOrder = async () => {
     if (!orderToDelete) return;
@@ -81,10 +113,21 @@ const OrderList = () => {
   }, []);
 
   const filteredOrders = orders.filter(order => {
+    const items = order.items || [];
     const matchesSearch = (order.orderId || order._id || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (order.customerName || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    const matchesProduct = !productFilter || items.some(i => i.product === productFilter);
+    const matchesSize = !sizeFilter || items.some(i =>
+      Object.entries(i.sizes || {}).some(([s, v]) => s === sizeFilter && (v?.quantity || 0) > 0)
+    );
+    const matchesColor = !colorFilter || items.some(i => i.details?.color === colorFilter);
+    const matchesCustomer = !customerFilter || order.customerName === customerFilter;
+    const due = order.deliveryDate ? new Date(order.deliveryDate) : null;
+    const matchesDueFrom = !dueFrom || (due && due >= new Date(dueFrom));
+    const matchesDueTo = !dueTo || (due && due <= new Date(`${dueTo}T23:59:59`));
+    return matchesSearch && matchesStatus && matchesProduct && matchesSize &&
+           matchesColor && matchesCustomer && matchesDueFrom && matchesDueTo;
   });
 
   if (loading) {
@@ -118,18 +161,122 @@ const OrderList = () => {
         </Link>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-4">
-        <SearchBar
-          placeholder="Search orders..."
-          value={searchTerm}
-          onChange={setSearchTerm}
-        />
-        <FilterOptions
-          options={statuses}
-          selected={statusFilter}
-          onChange={setStatusFilter}
-          label="Status"
-        />
+      <div className="space-y-4">
+        <div className="flex flex-col sm:flex-row gap-4">
+          <SearchBar
+            placeholder="Search orders..."
+            value={searchTerm}
+            onChange={setSearchTerm}
+          />
+          <FilterOptions
+            options={statuses}
+            selected={statusFilter}
+            onChange={setStatusFilter}
+            label="Status"
+          />
+          <button
+            type="button"
+            onClick={() => setShowFilters(v => !v)}
+            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md bg-white hover:bg-gray-50 transition-colors text-sm"
+          >
+            <Filter className="w-4 h-4 mr-2" />
+            Filters
+            {activeFilterCount > 0 && (
+              <span className="ml-2 px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 text-xs font-medium">
+                {activeFilterCount}
+              </span>
+            )}
+          </button>
+        </div>
+
+        {showFilters && (
+          <div className="bg-white rounded-lg shadow p-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Product</label>
+                <select
+                  value={productFilter}
+                  onChange={(e) => setProductFilter(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-blue-500"
+                >
+                  <option value="">All Products</option>
+                  {productOptions.map(p => <option key={p} value={p}>{p}</option>)}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Size</label>
+                <select
+                  value={sizeFilter}
+                  onChange={(e) => setSizeFilter(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-blue-500"
+                >
+                  <option value="">All Sizes</option>
+                  {sizeOptions.map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Color</label>
+                <select
+                  value={colorFilter}
+                  onChange={(e) => setColorFilter(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-blue-500"
+                >
+                  <option value="">All Colors</option>
+                  {colorOptions.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Customer</label>
+                <select
+                  value={customerFilter}
+                  onChange={(e) => setCustomerFilter(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-blue-500"
+                >
+                  <option value="">All Customers</option>
+                  {customerOptions.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Due From</label>
+                <input
+                  type="date"
+                  value={dueFrom}
+                  onChange={(e) => setDueFrom(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Due To</label>
+                <input
+                  type="date"
+                  value={dueTo}
+                  onChange={(e) => setDueTo(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end mt-4">
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="text-sm text-gray-600 hover:text-gray-900 inline-flex items-center"
+              >
+                <X className="w-4 h-4 mr-1" />
+                Clear All
+              </button>
+            </div>
+          </div>
+        )}
+
+        <div className="text-sm text-gray-500">
+          Showing {filteredOrders.length} of {orders.length} orders
+        </div>
       </div>
 
       <div className="bg-white rounded-lg shadow overflow-hidden">

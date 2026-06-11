@@ -1,75 +1,70 @@
 import React from 'react';
-import { Clock, Package, ShoppingCart, User } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Clock, ShoppingCart } from 'lucide-react';
 
-const RecentActivity = () => {
-  const activities = [
-    {
-      id: 1,
-      type: 'order',
-      message: 'New order #1234 received',
-      customer: 'Rajesh Kumar',
-      time: '5 minutes ago',
-      icon: ShoppingCart,
-      color: 'blue'
-    },
-    {
-      id: 2,
-      type: 'production',
-      message: 'Production completed for order #1230',
-      customer: 'Priya Sharma',
-      time: '1 hour ago',
-      icon: Package,
-      color: 'green'
-    },
-    {
-      id: 3,
-      type: 'customer',
-      message: 'New customer registered',
-      customer: 'Amit Patel',
-      time: '2 hours ago',
-      icon: User,
-      color: 'purple'
-    },
-    {
-      id: 4,
-      type: 'order',
-      message: 'Order #1225 delivered',
-      customer: 'Sunita Devi',
-      time: '3 hours ago',
-      icon: ShoppingCart,
-      color: 'green'
-    }
-  ];
+const timeAgo = (date) => {
+  if (!date) return '';
+  const then = new Date(date).getTime();
+  if (Number.isNaN(then)) return '';
+  const seconds = Math.floor((Date.now() - then) / 1000);
+  if (seconds < 60) return 'just now';
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 30) return `${days} day${days > 1 ? 's' : ''} ago`;
+  const months = Math.floor(days / 30);
+  return `${months} month${months > 1 ? 's' : ''} ago`;
+};
 
-  const colorClasses = {
-    blue: 'bg-blue-100 text-blue-600',
-    green: 'bg-green-100 text-green-600',
-    purple: 'bg-purple-100 text-purple-600'
-  };
+const statusColor = (status) => {
+  switch (status) {
+    case 'Completed':
+    case 'Shipped':
+      return 'bg-green-100 text-green-600';
+    case 'Processing':
+      return 'bg-blue-100 text-blue-600';
+    default:
+      return 'bg-yellow-100 text-yellow-600';
+  }
+};
+
+const RecentActivity = ({ orders = [] }) => {
+  const recent = [...orders]
+    .sort((a, b) => new Date(b.createdAt || b.orderDate || 0) - new Date(a.createdAt || a.orderDate || 0))
+    .slice(0, 5);
 
   return (
     <div className="bg-white rounded-lg shadow p-6">
       <h3 className="text-lg font-semibold mb-4">Recent Activity</h3>
-      <div className="space-y-4">
-        {activities.map((activity) => {
-          const Icon = activity.icon;
-          return (
-            <div key={activity.id} className="flex items-start space-x-3">
-              <div className={`p-2 rounded-lg ${colorClasses[activity.color]}`}>
-                <Icon className="w-4 h-4" />
+      {recent.length === 0 ? (
+        <p className="text-sm text-gray-500">No recent orders.</p>
+      ) : (
+        <div className="space-y-4">
+          {recent.map((order) => (
+            <Link
+              key={order._id || order.orderId}
+              to={`/orders/${order._id || order.orderId}`}
+              className="flex items-start space-x-3 hover:bg-gray-50 -mx-2 px-2 py-1 rounded-md transition-colors"
+            >
+              <div className={`p-2 rounded-lg ${statusColor(order.status)}`}>
+                <ShoppingCart className="w-4 h-4" />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-medium text-gray-900">{activity.message}</p>
-                <p className="text-sm text-gray-500">{activity.customer}</p>
+                <p className="text-sm font-medium text-gray-900">
+                  Order {order.orderId || order._id} — {order.status}
+                </p>
+                <p className="text-sm text-gray-500">{order.customerName}</p>
                 <div className="flex items-center mt-1 text-xs text-gray-400">
                   <Clock className="w-3 h-3 mr-1" />
-                  {activity.time}
+                  {timeAgo(order.createdAt || order.orderDate)}
                 </div>
               </div>
-            </div>
-          );
-        })}
-      </div>
+            </Link>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
