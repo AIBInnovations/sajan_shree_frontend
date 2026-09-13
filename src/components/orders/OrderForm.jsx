@@ -4,6 +4,8 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { useNavigate, useParams } from 'react-router-dom';
 import ApiService from '../../services/api';
+import Card from '../ui/Card';
+import Button from '../ui/Button';
 
 // Fallback configuration used only if the /api/products config is empty or fails to load.
 // Item #7 removals are already applied here (Pant Elastic & Pant Belt = Color only).
@@ -55,6 +57,9 @@ const OrderForm = () => {
 
   const [formData, setFormData] = useState({
     customer: '',
+    customerPhone: '',
+    whatsappConsent: false,
+    includeValueInWhatsApp: false,
     dueDate: '',
     orderDescription: '',
     items: [
@@ -129,6 +134,9 @@ const OrderForm = () => {
         const order = await ApiService.getOrder(id);
         setFormData({
           customer: order.customerName || '',
+          customerPhone: order.customerPhone || '',
+          whatsappConsent: Boolean(order.whatsappConsent),
+          includeValueInWhatsApp: Boolean(order.includeValueInWhatsApp),
           dueDate: order.deliveryDate ? new Date(order.deliveryDate).toISOString().slice(0, 10) : '',
           orderDescription: order.orderDescription || '',
           items: (order.items || []).map((it, i) => ({
@@ -190,6 +198,9 @@ const OrderForm = () => {
 
       const payload = {
         customerName: formData.customer,
+        customerPhone: formData.customerPhone || '',
+        whatsappConsent: formData.whatsappConsent,
+        includeValueInWhatsApp: formData.includeValueInWhatsApp,
         deliveryDate: formData.dueDate ? new Date(formData.dueDate).toISOString() : '',
         product: validItems.length > 0 ? validItems[0].product : '',
         items: validItems.map(item => ({
@@ -220,6 +231,13 @@ const OrderForm = () => {
         if (payload.orderDescription) {
           fd.append('orderDescription', payload.orderDescription);
         }
+        // Guarded like orderDescription above: FormData turns undefined into the
+        // literal string "undefined". Booleans arrive server-side as "true"/"false".
+        if (payload.customerPhone) {
+          fd.append('customerPhone', payload.customerPhone);
+        }
+        fd.append('whatsappConsent', String(payload.whatsappConsent));
+        fd.append('includeValueInWhatsApp', String(payload.includeValueInWhatsApp));
         fd.append('orderImage', orderImage);
 
         result = isEdit
@@ -250,8 +268,8 @@ const OrderForm = () => {
   };
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    const { name, value, type, checked } = e.target;
+    setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
   };
 
   const handleItemChange = (itemId, field, value) => {
@@ -481,18 +499,18 @@ const OrderForm = () => {
   };
 
   const renderDetailFields = (item, fields) => (
-    <div className="w-full px-2 py-2 border-t border-gray-200">
+    <div className="w-full px-2 py-2 border-t border-border">
       <div className="flex flex-wrap items-start gap-6 w-full">
         {fields.map((field) => {
           const isAdding = optionAdd && optionAdd.itemId === item.id && optionAdd.fieldKey === field.key;
           return (
             <div key={field.key} className="flex flex-col space-y-2 w-48">
-              <label className="text-xs font-medium text-gray-700">{field.label}</label>
+              <label className="text-xs font-medium text-muted-foreground">{field.label}</label>
               <div className="flex items-center space-x-2">
                 <select
                   value={item.details?.[field.key] || ''}
                   onChange={(e) => handleProductDetailsChange(item.id, field.key, e.target.value)}
-                  className="flex-1 px-2 py-1.5 border border-gray-300 rounded text-xs focus:ring-1 focus:ring-blue-400 focus:border-blue-400"
+                  className="flex-1 px-2 py-1.5 border border-input rounded text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   <option value="">Select</option>
                   {field.options.map(opt => (
@@ -500,8 +518,8 @@ const OrderForm = () => {
                   ))}
                 </select>
 
-                <label className="w-8 h-8 flex items-center justify-center border-2 border-dashed border-gray-300 rounded cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors group">
-                  <Upload className="h-4 w-4 text-gray-400 group-hover:text-blue-500" />
+                <label className="w-8 h-8 flex items-center justify-center border-2 border-dashed border-input rounded cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors group">
+                  <Upload className="h-4 w-4 text-muted-foreground group-hover:text-primary" />
                   <input
                     type="file"
                     accept="image/*"
@@ -533,19 +551,19 @@ const OrderForm = () => {
                       if (e.key === 'Escape') setOptionAdd(null);
                     }}
                     placeholder={`New ${field.label}`}
-                    className="flex-1 px-2 py-1 border border-gray-300 rounded text-xs focus:ring-1 focus:ring-blue-400"
+                    className="flex-1 px-2 py-1 border border-input rounded text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   />
                   <button
                     type="button"
                     onClick={() => handleAddOption(item.product, field.key)}
-                    className="px-2 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700"
+                    className="px-2 py-1 bg-primary text-primary-foreground rounded text-xs hover:bg-primary/90"
                   >
                     Add
                   </button>
                   <button
                     type="button"
                     onClick={() => setOptionAdd(null)}
-                    className="text-gray-400 hover:text-gray-600"
+                    className="text-muted-foreground hover:text-foreground"
                   >
                     <X className="h-3 w-3" />
                   </button>
@@ -554,7 +572,7 @@ const OrderForm = () => {
                 <button
                   type="button"
                   onClick={() => setOptionAdd({ itemId: item.id, fieldKey: field.key, value: '' })}
-                  className="text-xs text-blue-600 hover:text-blue-800 text-left inline-flex items-center"
+                  className="text-xs text-primary hover:text-primary/80 text-left inline-flex items-center"
                 >
                   <Plus className="h-3 w-3 mr-1" /> Add {field.label}
                 </button>
@@ -565,12 +583,12 @@ const OrderForm = () => {
                   <img
                     src={item.details[`${field.key}Image`]}
                     alt={`${field.label} preview`}
-                    className="w-20 h-20 object-cover rounded-md border-2 border-gray-200"
+                    className="w-20 h-20 object-cover rounded-md border-2 border-border"
                   />
                   <button
                     type="button"
                     onClick={() => handleProductDetailsChange(item.id, `${field.key}Image`, '')}
-                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 shadow-md transition-all opacity-0 group-hover:opacity-100"
+                    className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1 hover:bg-destructive/90 shadow-md transition-all opacity-0 group-hover:opacity-100"
                     title="Remove image"
                   >
                     <X className="h-3 w-3" />
@@ -591,12 +609,12 @@ const OrderForm = () => {
   return (
     <div className=" mx-auto">
       <div className="mb-6 flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-900">
+        <h2 className="text-2xl font-bold text-foreground">
           {isEdit ? 'Edit Order' : 'Create New Order'}
         </h2>
         {/* #6 — Live date & time */}
-        <div className="text-sm text-gray-600 text-right">
-          <div className="font-medium text-gray-800">
+        <div className="text-sm text-muted-foreground text-right">
+          <div className="font-medium text-foreground">
             {currentDateTime.toLocaleDateString('en-IN', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}
           </div>
           <div>{currentDateTime.toLocaleTimeString('en-IN')}</div>
@@ -605,12 +623,12 @@ const OrderForm = () => {
 
       <div className="space-y-6">
         {/* Customer Information Section */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Order Information</h3>
+        <Card>
+          <h3 className="text-lg font-medium text-foreground mb-4">Order Information</h3>
 
           <div className="grid grid-cols-4 gap-4">
             <div className="col-span-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-muted-foreground mb-1">
                 Customer Name *
               </label>
               <input
@@ -620,7 +638,7 @@ const OrderForm = () => {
                 value={formData.customer}
                 onChange={handleChange}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-ring text-sm"
               />
               <datalist id="customer-suggestions">
                 {customerSuggestions.map(name => (
@@ -629,18 +647,54 @@ const OrderForm = () => {
               </datalist>
             </div>
 
+            <div className="col-span-1">
+              <label className="block text-sm font-medium text-muted-foreground mb-1">
+                Customer Phone (Optional)
+              </label>
+              <input
+                type="tel"
+                name="customerPhone"
+                inputMode="tel"
+                autoComplete="tel"
+                value={formData.customerPhone}
+                onChange={handleChange}
+                placeholder="e.g. 98765 43210"
+                className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-ring text-sm"
+              />
+              <label className="flex items-start gap-2 mt-2 text-xs text-muted-foreground cursor-pointer">
+                <input
+                  type="checkbox"
+                  name="whatsappConsent"
+                  checked={formData.whatsappConsent}
+                  onChange={handleChange}
+                  className="mt-0.5"
+                />
+                <span>Customer agreed to order updates on WhatsApp</span>
+              </label>
+              <label className="flex items-start gap-2 mt-1 text-xs text-muted-foreground cursor-pointer">
+                <input
+                  type="checkbox"
+                  name="includeValueInWhatsApp"
+                  checked={formData.includeValueInWhatsApp}
+                  onChange={handleChange}
+                  className="mt-0.5"
+                />
+                <span>Include order value in the message</span>
+              </label>
+            </div>
+
             {/* #1 — Order Date (read-only) */}
             <div className="col-span-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-muted-foreground mb-1">
                 Order Date
               </label>
-              <p className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-sm">
+              <p className="w-full px-3 py-2 border border-input rounded-md bg-muted text-sm">
                 {orderDateDisplay.toLocaleDateString('en-IN')}
               </p>
             </div>
 
             <div className="col-span-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-muted-foreground mb-1">
                 Due Date *
               </label>
               <input
@@ -649,16 +703,16 @@ const OrderForm = () => {
                 value={formData.dueDate}
                 onChange={handleChange}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-ring text-sm"
               />
             </div>
 
             <div className="col-span-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-muted-foreground mb-1">
                 Order Image
               </label>
               <div className="relative">
-                <label className="flex items-center justify-center px-4 py-2 border-2 border-dashed border-gray-300 rounded-md cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors">
+                <label className="flex items-center justify-center px-4 py-2 border-2 border-dashed border-input rounded-md cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors">
                   <input
                     type="file"
                     accept="image/*"
@@ -668,7 +722,7 @@ const OrderForm = () => {
                   {orderImage ? (
                     <div className="flex items-center space-x-2">
                       <ImageIcon className="w-5 h-5 text-green-600" />
-                      <span className="text-sm text-gray-700 truncate max-w-[150px]">{orderImage.name}</span>
+                      <span className="text-sm text-foreground truncate max-w-[150px]">{orderImage.name}</span>
                       <button
                         type="button"
                         onClick={(e) => {
@@ -676,15 +730,15 @@ const OrderForm = () => {
                           e.stopPropagation();
                           handleImageChange(null);
                         }}
-                        className="text-red-500 hover:text-red-700"
+                        className="text-destructive hover:text-destructive/80"
                       >
                         <X className="w-4 h-4" />
                       </button>
                     </div>
                   ) : (
                     <div className="flex items-center space-x-2">
-                      <Upload className="w-5 h-5 text-gray-400" />
-                      <span className="text-sm text-gray-500">Upload Image</span>
+                      <Upload className="w-5 h-5 text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">Upload Image</span>
                     </div>
                   )}
                 </label>
@@ -693,14 +747,14 @@ const OrderForm = () => {
                   <img
                     src={imagePreview || existingImageUrl}
                     alt="Order preview"
-                    className="mt-2 w-24 h-24 object-cover rounded-md border border-gray-200"
+                    className="mt-2 w-24 h-24 object-cover rounded-md border border-border"
                   />
                 )}
               </div>
             </div>
 
             <div className="col-span-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-muted-foreground mb-1">
                 Description (Optional)
               </label>
               <input
@@ -709,20 +763,20 @@ const OrderForm = () => {
                 value={formData.orderDescription}
                 onChange={handleChange}
                 placeholder="Order notes..."
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-ring text-sm"
               />
             </div>
           </div>
-        </div>
+        </Card>
 
         {/* Order Items Matrix */}
         <div>
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-medium text-gray-900">Order Items</h3>
+            <h3 className="text-lg font-medium text-foreground">Order Items</h3>
             <button
               type="button"
               onClick={addProduct}
-              className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm bg-white hover:bg-gray-50 transition-colors"
+              className="inline-flex items-center px-3 py-2 border border-input rounded-md text-sm bg-background hover:bg-muted transition-colors"
             >
               <Plus className="w-4 h-4 mr-1" />
               Add Product
@@ -730,13 +784,13 @@ const OrderForm = () => {
           </div>
 
           {formData.items.map((item) => (
-            <div key={item.id} className="mb-4 rounded-lg border border-gray-200 overflow-hidden">
+            <div key={item.id} className="mb-4 rounded-lg border border-border overflow-hidden">
               {/* Product Header */}
-              <div className="bg-white px-4 py-3 flex justify-between items-center">
+              <div className="bg-card px-4 py-3 flex justify-between items-center">
                 <select
                   value={item.product}
                   onChange={(e) => handleItemChange(item.id, 'product', e.target.value)}
-                  className="border border-gray-300 rounded-md px-3 py-1 text-sm w-64 focus:ring-2 focus:ring-blue-500"
+                  className="border border-input rounded-md px-3 py-1 text-sm w-64 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   <option value="">Select Product</option>
                   {products.map(product => (
@@ -745,26 +799,31 @@ const OrderForm = () => {
                 </select>
 
                 <div className="flex items-center space-x-4">
-                  <span className="text-gray-500 text-sm">
+                  <span className="text-muted-foreground text-sm">
                     Pieces: {calculateRowPieces(item)}
                   </span>
-                  <span className="text-gray-700 font-bold text-sm">
+                  <span className="text-foreground font-bold text-sm">
                     Total: ₹{calculateRowTotal(item)}
                   </span>
-                  <button onClick={() => removeProduct(item.id)} className="text-red-500 hover:text-red-700">
+                  <button onClick={() => removeProduct(item.id)} className="text-destructive hover:text-destructive/80">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
               </div>
 
               {/* Size Matrix */}
+              {!item.product ? (
+                <div className="border-t border-border px-4 py-6 text-center text-sm text-muted-foreground">
+                  Select a product to enter sizes, quantities and prices.
+                </div>
+              ) : (
               <div className="overflow-x-auto">
                 <table className="min-w-full text-xs">
-                  <thead className="bg-gray-50">
+                  <thead className="bg-muted">
                     <tr>
-                      <th className="px-3 py-2 text-center text-xs font-semibold text-gray-700 bg-blue-50">SIZE</th>
+                      <th className="w-24 px-3 py-2 text-center text-xs font-semibold text-foreground bg-primary/10">SIZE</th>
                       {getCurrentSizes(item).map(size => (
-                        <th key={`${item.id}-${size}`} className="px-2 py-2 text-center font-semibold text-gray-700">
+                        <th key={`${item.id}-${size}`} className="px-2 py-2 text-center font-semibold text-foreground">
                           {size}
                         </th>
                       ))}
@@ -783,12 +842,12 @@ const OrderForm = () => {
                                   if (e.key === 'Escape') setSizeAdd(null);
                                 }}
                                 placeholder="Size"
-                                className="w-16 border border-gray-300 rounded px-1 py-0.5 text-center"
+                                className="w-16 border border-input rounded px-1 py-0.5 text-center"
                               />
                               <button type="button" onClick={() => handleAddSize(item.product)} className="text-green-600 hover:text-green-800" title="Add">
                                 <Save className="w-3.5 h-3.5" />
                               </button>
-                              <button type="button" onClick={() => setSizeAdd(null)} className="text-red-500 hover:text-red-700" title="Cancel">
+                              <button type="button" onClick={() => setSizeAdd(null)} className="text-destructive hover:text-destructive/80" title="Cancel">
                                 <X className="w-3.5 h-3.5" />
                               </button>
                             </div>
@@ -796,7 +855,7 @@ const OrderForm = () => {
                             <button
                               type="button"
                               onClick={() => setSizeAdd({ itemId: item.id, value: '' })}
-                              className="text-blue-600 hover:text-blue-800 inline-flex items-center"
+                              className="text-primary hover:text-primary/80 inline-flex items-center"
                               title="Add size"
                             >
                               <Plus className="w-4 h-4" />
@@ -807,8 +866,8 @@ const OrderForm = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    <tr className="hover:bg-gray-50">
-                      <td className="px-2 py-2 text-center text-xs font-medium text-gray-700 bg-blue-50">QTY</td>
+                    <tr className="hover:bg-muted">
+                      <td className="w-24 px-2 py-2 text-center text-xs font-medium text-foreground bg-primary/10">QTY</td>
                       {getCurrentSizes(item).map(size => (
                         <td key={`${item.id}-${size}-qty`} className="px-1 py-1 text-center">
                           <input
@@ -817,14 +876,14 @@ const OrderForm = () => {
                             pattern="[0-9]*"
                             value={item.sizes[size]?.quantity || 0}
                             onChange={(e) => handleSizeChange(item.id, size, 'quantity', e.target.value)}
-                            className="w-full border border-gray-300 rounded-md px-2 py-1 text-center focus:ring-2 focus:ring-blue-400"
+                            className="w-full border border-input rounded-md px-2 py-1 text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                           />
                         </td>
                       ))}
                       {item.product && <td className="px-1 py-1"></td>}
                     </tr>
-                    <tr className="hover:bg-gray-50">
-                      <td className="px-2 py-2 text-center text-xs font-medium text-gray-700 bg-blue-50">PRICE</td>
+                    <tr className="hover:bg-muted">
+                      <td className="w-24 px-2 py-2 text-center text-xs font-medium text-foreground bg-primary/10">PRICE</td>
                       {getCurrentSizes(item).map(size => (
                         <td key={`${item.id}-${size}-price`} className="px-1 py-1 text-center">
                           <input
@@ -833,7 +892,7 @@ const OrderForm = () => {
                             pattern="[0-9]*"
                             value={item.sizes[size]?.price || 0}
                             onChange={(e) => handleSizeChange(item.id, size, 'price', e.target.value)}
-                            className="w-full border border-gray-300 rounded-md px-2 py-1 text-center focus:ring-2 focus:ring-green-400"
+                            className="w-full border border-input rounded-md px-2 py-1 text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-400"
                           />
                         </td>
                       ))}
@@ -842,10 +901,11 @@ const OrderForm = () => {
                   </tbody>
                 </table>
               </div>
+              )}
 
               {/* Product Details */}
               {item.product && (detailConfig[item.product]?.length > 0) && (
-                <div className="p-2 bg-gray-50">
+                <div className="p-2 bg-muted">
                   {renderDetailFields(item, detailConfig[item.product])}
                 </div>
               )}
@@ -853,15 +913,15 @@ const OrderForm = () => {
           ))}
 
           {/* Grand Total */}
-          <div className="flex justify-end border-t border-gray-200 pt-4 mt-4">
+          <div className="flex justify-end border-t border-border pt-4 mt-4">
             <div className="flex space-x-8 text-right">
               <div>
-                <div className="text-sm text-gray-600">Total Pieces:</div>
-                <div className="text-xl font-semibold text-gray-800">{calculateGrandPieces()}</div>
+                <div className="text-sm text-muted-foreground">Total Pieces:</div>
+                <div className="text-xl font-semibold text-foreground">{calculateGrandPieces()}</div>
               </div>
               <div>
-                <div className="text-sm text-gray-600">Grand Total:</div>
-                <div className="text-2xl font-bold text-gray-900">₹{calculateGrandTotal()}</div>
+                <div className="text-sm text-muted-foreground">Grand Total:</div>
+                <div className="text-2xl font-bold text-foreground">₹{calculateGrandTotal()}</div>
               </div>
             </div>
           </div>
@@ -872,18 +932,13 @@ const OrderForm = () => {
           <button
             type="button"
             onClick={() => navigate('/orders')}
-            className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors inline-flex items-center"
+            className="px-6 py-2 border border-input rounded-md text-foreground hover:bg-muted transition-colors inline-flex items-center"
           >
             <X className="w-4 h-4 mr-2" />
             Cancel
           </button>
 
-          <button
-            type="button"
-            onClick={handleSubmit}
-            disabled={isSubmitting}
-            className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors inline-flex items-center disabled:opacity-60 disabled:cursor-not-allowed"
-          >
+          <Button type="button" onClick={handleSubmit} disabled={isSubmitting}>
             {isSubmitting ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -895,11 +950,11 @@ const OrderForm = () => {
                 {isEdit ? 'Update Order' : 'Create Order'}
               </>
             )}
-          </button>
+          </Button>
 
-          <button onClick={handlePrintPage} className="px-4 py-2 bg-green-600 text-white rounded">
+          <Button type="button" variant="outline" onClick={handlePrintPage}>
             Print / Save as PDF
-          </button>
+          </Button>
         </div>
       </div>
     </div>

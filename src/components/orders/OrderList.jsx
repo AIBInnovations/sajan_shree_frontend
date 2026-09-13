@@ -8,6 +8,8 @@ import OrderStatusBadge from './OrderStatusBadge';
 import ApiService from '../../services/api';
 import LoadingSpinner from '../common/LoadingSpinner';
 import ConfirmDialog from '../common/ConfirmDialog';
+import Card from '../ui/Card';
+import Button from '../ui/Button';
 
 const OrderList = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -137,13 +139,10 @@ const OrderList = () => {
   if (error) {
     return (
       <div className="text-center py-8">
-        <p className="text-red-600">{error}</p>
-        <button 
-          onClick={() => window.location.reload()} 
-          className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-        >
+        <p className="text-destructive">{error}</p>
+        <Button onClick={() => window.location.reload()} className="mt-4">
           Retry
-        </button>
+        </Button>
       </div>
     );
   }
@@ -151,10 +150,10 @@ const OrderList = () => {
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <h2 className="text-2xl font-bold text-gray-900">Orders</h2>
+        <h2 className="text-2xl font-bold text-foreground">Orders</h2>
         <Link
           to="/orders/new"
-          className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+          className="inline-flex items-center px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors active:scale-[0.98]"
         >
           <Plus className="w-4 h-4 mr-2" />
           New Order
@@ -177,12 +176,12 @@ const OrderList = () => {
           <button
             type="button"
             onClick={() => setShowFilters(v => !v)}
-            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md bg-white hover:bg-gray-50 transition-colors text-sm"
+            className="inline-flex items-center px-4 py-2 border border-input rounded-md bg-background hover:bg-muted transition-colors text-sm"
           >
             <Filter className="w-4 h-4 mr-2" />
             Filters
             {activeFilterCount > 0 && (
-              <span className="ml-2 px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 text-xs font-medium">
+              <span className="ml-2 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-medium">
                 {activeFilterCount}
               </span>
             )}
@@ -190,14 +189,14 @@ const OrderList = () => {
         </div>
 
         {showFilters && (
-          <div className="bg-white rounded-lg shadow p-4">
+          <Card className="p-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Product</label>
+                <label className="block text-xs font-medium text-muted-foreground mb-1">Product</label>
                 <select
                   value={productFilter}
                   onChange={(e) => setProductFilter(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-input rounded-md text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   <option value="">All Products</option>
                   {productOptions.map(p => <option key={p} value={p}>{p}</option>)}
@@ -205,11 +204,11 @@ const OrderList = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Size</label>
+                <label className="block text-xs font-medium text-muted-foreground mb-1">Size</label>
                 <select
                   value={sizeFilter}
                   onChange={(e) => setSizeFilter(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-input rounded-md text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   <option value="">All Sizes</option>
                   {sizeOptions.map(s => <option key={s} value={s}>{s}</option>)}
@@ -217,11 +216,11 @@ const OrderList = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Color</label>
+                <label className="block text-xs font-medium text-muted-foreground mb-1">Color</label>
                 <select
                   value={colorFilter}
                   onChange={(e) => setColorFilter(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-input rounded-md text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   <option value="">All Colors</option>
                   {colorOptions.map(c => <option key={c} value={c}>{c}</option>)}
@@ -229,11 +228,11 @@ const OrderList = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Customer</label>
+                <label className="block text-xs font-medium text-muted-foreground mb-1">Customer</label>
                 <select
                   value={customerFilter}
                   onChange={(e) => setCustomerFilter(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-input rounded-md text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   <option value="">All Customers</option>
                   {customerOptions.map(c => <option key={c} value={c}>{c}</option>)}
@@ -241,22 +240,22 @@ const OrderList = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Due From</label>
+                <label className="block text-xs font-medium text-muted-foreground mb-1">Due From</label>
                 <input
                   type="date"
                   value={dueFrom}
                   onChange={(e) => setDueFrom(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-input rounded-md text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Due To</label>
+                <label className="block text-xs font-medium text-muted-foreground mb-1">Due To</label>
                 <input
                   type="date"
                   value={dueTo}
                   onChange={(e) => setDueTo(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-input rounded-md text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 />
               </div>
             </div>
@@ -265,71 +264,71 @@ const OrderList = () => {
               <button
                 type="button"
                 onClick={clearFilters}
-                className="text-sm text-gray-600 hover:text-gray-900 inline-flex items-center"
+                className="text-sm text-muted-foreground hover:text-foreground inline-flex items-center"
               >
                 <X className="w-4 h-4 mr-1" />
                 Clear All
               </button>
             </div>
-          </div>
+          </Card>
         )}
 
-        <div className="text-sm text-gray-500">
+        <div className="text-sm text-muted-foreground">
           Showing {filteredOrders.length} of {orders.length} orders
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      <Card className="p-0 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full">
-            <thead className="bg-gray-50">
+            <thead className="bg-muted">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Order ID
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Customer
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Date
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Due Date
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Total
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Status
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-card divide-y divide-border">
               {filteredOrders.length === 0 ? (
                 <tr>
-                  <td colSpan="7" className="px-4 py-8 text-center text-gray-500">
+                  <td colSpan="7" className="px-4 py-8 text-center text-muted-foreground">
                     No orders found
                   </td>
                 </tr>
               ) : (
                 filteredOrders.map((order) => (
                   <tr key={order._id || order.orderId}>
-                    <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-foreground">
                       {order.orderId || order._id}
                     </td>
-                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-foreground">
                       {order.customerName}
                     </td>
-                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-muted-foreground">
                       {new Date(order.createdAt || order.orderDate).toLocaleDateString('en-IN')}
                     </td>
-                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-muted-foreground">
                       {new Date(order.deliveryDate).toLocaleDateString('en-IN')}
                     </td>
-                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-foreground">
                       ₹{calculateOrderTotal(order).toFixed(2)}
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap">
@@ -339,14 +338,14 @@ const OrderList = () => {
                       <div className="flex items-center space-x-4">
                         <Link
                           to={`/orders/${order._id || order.orderId}`}
-                          className="text-blue-600 hover:text-blue-900 inline-flex items-center"
+                          className="text-primary hover:text-primary/80 inline-flex items-center"
                         >
                           <Eye className="w-4 h-4 mr-1" />
                           View
                         </Link>
                         <Link
                           to={`/orders/edit/${order._id || order.orderId}`}
-                          className="text-gray-600 hover:text-gray-900 inline-flex items-center"
+                          className="text-muted-foreground hover:text-foreground inline-flex items-center"
                         >
                           <Pencil className="w-4 h-4 mr-1" />
                           Edit
@@ -354,7 +353,7 @@ const OrderList = () => {
                         <button
                           type="button"
                           onClick={() => setOrderToDelete(order)}
-                          className="text-red-600 hover:text-red-900 inline-flex items-center"
+                          className="text-destructive hover:text-destructive/80 inline-flex items-center"
                         >
                           <Trash2 className="w-4 h-4 mr-1" />
                           Delete
@@ -367,7 +366,7 @@ const OrderList = () => {
             </tbody>
           </table>
         </div>
-      </div>
+      </Card>
 
       <ConfirmDialog
         isOpen={!!orderToDelete}

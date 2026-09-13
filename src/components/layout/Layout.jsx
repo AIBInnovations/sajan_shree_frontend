@@ -9,13 +9,9 @@ const Layout = () => {
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
 
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="flex h-screen bg-muted">
       {/* Desktop Sidebar */}
-      <div
-        className="hidden md:block"
-        onMouseEnter={() => setSidebarExpanded(true)}
-        onMouseLeave={() => setSidebarExpanded(false)}
-      >
+      <div className="hidden md:block">
         <Sidebar expanded={sidebarExpanded} />
       </div>
 
@@ -30,7 +26,7 @@ const Layout = () => {
         />
         {/* Sidebar Sliding In */}
         <div
-          className={`absolute inset-y-0 left-0 w-64 transition-transform duration-300 bg-white border-r ${
+          className={`absolute inset-y-0 left-0 w-64 transition-transform duration-300 bg-card border-r border-border ${
             sidebarOpen ? 'translate-x-0' : '-translate-x-full'
           }`}
         >
@@ -42,10 +38,15 @@ const Layout = () => {
       <div
         className={`flex-1 flex flex-col overflow-hidden transition-all duration-300`}
       >
-        <Header onMenuClick={() => setSidebarOpen(true)} />
+        <Header
+          onMenuClick={() => setSidebarOpen(true)}
+          sidebarExpanded={sidebarExpanded}
+          onToggleSidebar={() => setSidebarExpanded((prev) => !prev)}
+        />
 
-        <main className="flex-1 overflow-y-auto bg-gray-100">
-          <div className="p-4 md:p-6 mx-auto">
+        <main className="flex-1 overflow-y-auto bg-muted">
+          {/* extra bottom padding on mobile so the fixed MobileNav doesn't cover the last rows */}
+          <div className="p-4 md:p-6 pb-24 md:pb-6 mx-auto">
             <Outlet />
           </div>
         </main>

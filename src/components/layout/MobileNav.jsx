@@ -10,10 +10,14 @@ const MobileNav = () => {
     { path: '/reports', name: 'Reports', icon: BarChart },
   ];
 
+  // Temporarily showing only Home (Dashboard) + Orders; other tabs stay defined above, just hidden.
+  const VISIBLE_PATHS = ['/dashboard', '/orders'];
+  const visibleNavItems = navItems.filter((item) => VISIBLE_PATHS.includes(item.path));
+
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 print:hidden">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t border-border print:hidden">
       <div className="flex justify-around">
-        {navItems.map((item) => {
+        {visibleNavItems.map((item) => {
           const Icon = item.icon;
           return (
             <NavLink
@@ -21,7 +25,7 @@ const MobileNav = () => {
               to={item.path}
               className={({ isActive }) =>
                 `flex flex-col items-center py-2 px-3 text-xs ${
-                  isActive ? 'text-blue-600' : 'text-gray-600'
+                  isActive ? 'text-primary' : 'text-muted-foreground'
                 }`
               }
             >

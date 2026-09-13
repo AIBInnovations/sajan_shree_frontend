@@ -1,4 +1,5 @@
 import React from 'react';
+import Card from '../ui/Card';
 
 const StatsCard = ({ title, value, change, icon: Icon, color }) => {
   const colorClasses = {
@@ -9,20 +10,20 @@ const StatsCard = ({ title, value, change, icon: Icon, color }) => {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow p-4 md:p-6">
+    <Card className="p-4 md:p-6">
       <div className="flex items-center justify-between mb-2">
-        <span className="text-sm font-medium text-gray-600">{title}</span>
+        <span className="text-sm font-medium text-muted-foreground">{title}</span>
         <div className={`p-2 rounded-lg ${colorClasses[color]}`}>
           <Icon className="w-4 h-4" />
         </div>
       </div>
-      <div className="flex items-baseline">
-        <span className="text-2xl font-bold text-gray-900">{value}</span>
-        <span className={`ml-2 text-sm font-medium ${change.startsWith('+') ? 'text-green-600' : 'text-gray-500'}`}>
+      <div className="flex items-baseline flex-wrap gap-x-2">
+        <span className="text-2xl font-bold text-foreground">{value}</span>
+        <span className={`text-sm font-medium ${change.startsWith('+') ? 'text-green-600' : 'text-muted-foreground'}`}>
           {change}
         </span>
       </div>
-    </div>
+    </Card>
   );
 };
 

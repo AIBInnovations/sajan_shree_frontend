@@ -2,6 +2,10 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import ApiService from "../../services/api";
 import { useAuth } from "../../hooks/useAuth";
+import Card from "../ui/Card";
+import Input from "../ui/Input";
+import Button from "../ui/Button";
+import FormField from "../ui/FormField";
 
 const Login = () => {
   const [form, setForm] = useState({ email: "", password: "" });
@@ -36,48 +40,66 @@ const Login = () => {
   };
 
   return (
-    <div className="max-w-md mx-auto mt-20 p-6 bg-white rounded shadow">
-      <h2 className="text-2xl font-bold mb-6 text-center">Login</h2>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block mb-1">Email</label>
-          <input
-            type="email"
-            name="email"
-            value={form.email}
-            onChange={handleChange}
-            required
-            className="w-full px-3 py-2 border rounded"
-          />
+    <div className="flex min-h-screen">
+      <div className="hidden md:flex md:w-1/2 lg:w-2/5 flex-col items-center justify-center bg-primary text-primary-foreground p-12">
+        <img
+          src="/logo.png"
+          alt="Sajan Shree Garments"
+          className="h-32 w-auto object-contain brightness-0 invert mb-8"
+        />
+        <h1 className="text-2xl font-bold tracking-tight">Sajan Shree Garments</h1>
+        <p className="mt-3 text-center text-primary-foreground/80 max-w-xs">
+          Manufacturing management, streamlined.
+        </p>
+      </div>
+
+      <div className="flex flex-1 flex-col items-center justify-center bg-background px-6 py-12">
+        <div className="w-full max-w-md">
+          <div className="mb-8 flex flex-col items-center md:hidden">
+            <img src="/logo.png" alt="Sajan Shree Garments" className="h-16 w-auto object-contain mb-2" />
+            <span className="font-bold text-lg text-foreground">Sajan Shree Garments</span>
+          </div>
+
+          <Card className="rounded-2xl shadow-lg p-8">
+            <h2 className="text-2xl font-bold text-center text-foreground mb-6">Login</h2>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <FormField label="Email" htmlFor="email">
+                <Input
+                  id="email"
+                  type="email"
+                  name="email"
+                  value={form.email}
+                  onChange={handleChange}
+                  required
+                />
+              </FormField>
+              <FormField label="Password" htmlFor="password">
+                <Input
+                  id="password"
+                  type="password"
+                  name="password"
+                  value={form.password}
+                  onChange={handleChange}
+                  required
+                />
+              </FormField>
+              {error && <div className="text-sm text-destructive">{error}</div>}
+              <Button type="submit" disabled={loading} className="w-full">
+                {loading ? "Logging in..." : "Login"}
+              </Button>
+            </form>
+            <div className="mt-6 text-center text-sm text-muted-foreground">
+              Don't have an account?{" "}
+              <button
+                type="button"
+                className="text-primary font-medium hover:underline"
+                onClick={() => navigate("/register")}
+              >
+                Register
+              </button>
+            </div>
+          </Card>
         </div>
-        <div>
-          <label className="block mb-1">Password</label>
-          <input
-            type="password"
-            name="password"
-            value={form.password}
-            onChange={handleChange}
-            required
-            className="w-full px-3 py-2 border rounded"
-          />
-        </div>
-        {error && <div className="text-red-600 text-sm">{error}</div>}
-        <button
-          type="submit"
-          className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
-          disabled={loading}
-        >
-          {loading ? "Logging in..." : "Login"}
-        </button>
-      </form>
-      <div className="mt-4 text-center">
-        <span>Don't have an account? </span>
-        <button
-          className="text-blue-600 underline"
-          onClick={() => navigate("/register")}
-        >
-          Register
-        </button>
       </div>
     </div>
   );

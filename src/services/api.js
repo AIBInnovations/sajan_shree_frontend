@@ -69,6 +69,15 @@ class ApiService {
     });
   }
 
+  // Manually (re)send the WhatsApp order confirmation.
+  // options: { force?: boolean, phone?: string, consent?: boolean }
+  sendOrderWhatsApp(id, options = {}) {
+    return this.request(`/orders/${id}/whatsapp`, {
+      method: "POST",
+      body: JSON.stringify(options),
+    });
+  }
+
   // Products
   getProducts() {
     return this.request("/products");

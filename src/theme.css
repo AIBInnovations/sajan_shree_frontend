@@ -1,0 +1,32 @@
+@theme {
+  --font-sans: "DM Sans", sans-serif;
+
+  --color-background: #fafafa;
+  --color-foreground: #0f1729;
+
+  --color-card: #ffffff;
+  --color-card-foreground: #0f1729;
+
+  --color-primary: #1d3e53;
+  --color-primary-foreground: #fafafa;
+
+  --color-secondary: #8d3a3a;
+  --color-secondary-foreground: #fafafa;
+
+  --color-accent: #0da2e7;
+  --color-accent-foreground: #fafafa;
+
+  --color-muted: #f1f5f9;
+  --color-muted-foreground: #65758b;
+
+  --color-border: #e1e7ef;
+  --color-input: #e1e7ef;
+  --color-ring: #1d3e53;
+
+  --color-destructive: #ef4343;
+  --color-destructive-foreground: #fafafa;
+}
+
+body {
+  font-family: "DM Sans", sans-serif;
+}

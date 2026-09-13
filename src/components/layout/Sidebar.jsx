@@ -19,53 +19,61 @@ const Sidebar = ({ expanded, mobile, onClose }) => {
     { path: '/users', name: 'Users', icon: UserCheck },
   ];
 
+  // Temporarily showing only Dashboard + Orders; other tabs stay defined above, just hidden.
+  const VISIBLE_PATHS = ['/dashboard', '/orders'];
+  const visibleNavItems = navItems.filter((item) => VISIBLE_PATHS.includes(item.path));
+
+  const showLabels = expanded || mobile;
+
   return (
     <div
-      className={`flex flex-col border-r border-gray-200 bg-white h-full overflow-hidden transition-[width] duration-300 print:hidden ${
+      className={`flex flex-col border-r border-border bg-card h-full overflow-hidden transition-[width] duration-300 print:hidden ${
         mobile ? 'w-64' : expanded ? 'w-64' : 'w-16'
       }`}
     >
-      <div className="flex items-center justify-between h-16 border-b border-gray-200 px-4">
-        {expanded || mobile ? (
-          <h2 className="text-xl font-bold text-gray-800">Sajan Shree</h2>
-        ) : (
-          <h2 className="text-xl font-bold text-gray-800 text-center w-full">S</h2>
-        )}
+      <div
+        className={`flex items-center h-16 border-b border-border ${
+          showLabels ? 'justify-between px-4' : 'justify-center px-2'
+        }`}
+      >
+        <div className="flex items-center gap-2 min-w-0">
+          <img src="/logo.png" alt="Sajan Shree" className="h-10 w-auto object-contain shrink-0" />
+          {showLabels && (
+            <span className="text-lg font-bold text-foreground whitespace-nowrap">Sajan Shree</span>
+          )}
+        </div>
         {mobile && (
-          <button onClick={onClose} className="p-1 rounded-md hover:bg-gray-100">
+          <button onClick={onClose} className="p-1 rounded-md hover:bg-muted shrink-0">
             <X className="w-5 h-5" />
           </button>
         )}
       </div>
 
-      <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
-        {navItems.map((item) => {
+      <nav
+        className={`flex-1 py-4 space-y-1 overflow-y-auto overflow-x-hidden ${
+          showLabels ? 'px-3' : 'px-2'
+        }`}
+      >
+        {visibleNavItems.map((item) => {
           const Icon = item.icon;
           return (
             <NavLink
               key={item.path}
               to={item.path}
               onClick={mobile ? onClose : undefined}
+              title={showLabels ? undefined : item.name}
               className={({ isActive }) =>
-                `flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors duration-300 ${
+                `flex items-center h-10 text-sm font-medium rounded-lg transition-colors ${
+                  showLabels ? 'px-3' : 'justify-center'
+                } ${
                   isActive
-                    ? 'bg-blue-50 text-blue-700'
-                    : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-foreground/70 hover:bg-muted hover:text-foreground'
                 }`
               }
             >
-              <div className="w-6 flex justify-center">
-                <Icon className="w-5 h-5" />
-              </div>
-              <span
-                className={`ml-2 whitespace-nowrap transition-all duration-300 ${
-                  expanded || mobile
-                    ? 'opacity-100 translate-x-0'
-                    : 'opacity-0 -translate-x-2 pointer-events-none'
-                }`}
-              >
-                {item.name}
-              </span>
+              <Icon className="w-5 h-5 shrink-0" />
+              {showLabels && <span className="ml-3 whitespace-nowrap">{item.name}</span>}
             </NavLink>
           );
         })}

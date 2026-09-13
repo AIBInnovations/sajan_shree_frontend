@@ -4,7 +4,9 @@ import StatsCard from './StatsCard';
 import RecentActivity from './RecentActivity';
 import LoadingSpinner from '../common/LoadingSpinner';
 import ApiService from '../../services/api';
-import { Package, ShoppingCart, TrendingUp, Clock, FileText } from 'lucide-react';
+import Card from '../ui/Card';
+import Button from '../ui/Button';
+import { Package, ShoppingCart, ClipboardList, TrendingUp, Clock, FileText } from 'lucide-react';
 
 const STATUS_META = [
   { key: 'Pending', label: 'Pending', color: 'bg-yellow-500' },
@@ -26,6 +28,9 @@ const formatCurrency = (value) => {
   if (value >= 1000) return `₹${(value / 1000).toFixed(1)}K`;
   return `₹${value.toFixed(0)}`;
 };
+
+// Temporarily showing only orders-related dashboard content; other widgets stay in the code, just hidden.
+const ORDERS_ONLY_MODE = true;
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -60,13 +65,10 @@ const Dashboard = () => {
   if (error) {
     return (
       <div className="text-center py-8">
-        <p className="text-red-600">{error}</p>
-        <button
-          onClick={() => window.location.reload()}
-          className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-        >
+        <p className="text-destructive">{error}</p>
+        <Button onClick={() => window.location.reload()} className="mt-4">
           Retry
-        </button>
+        </Button>
       </div>
     );
   }
@@ -91,7 +93,7 @@ const Dashboard = () => {
   }).length;
 
   const stats = [
-    { title: 'Total Orders', value: String(totalOrders), change: `${productsCount} products`, icon: ShoppingCart, color: 'blue' },
+    { title: 'Total Orders', value: String(totalOrders), change: ORDERS_ONLY_MODE ? 'All time' : `${productsCount} products`, icon: ShoppingCart, color: 'blue' },
     { title: 'Pending Orders', value: String(pendingCount), change: 'Awaiting', icon: Clock, color: 'red' },
     { title: 'Revenue', value: formatCurrency(revenue), change: 'All orders', icon: TrendingUp, color: 'purple' },
     { title: 'Due This Week', value: String(dueThisWeek), change: 'Next 7 days', icon: Package, color: 'green' },
@@ -100,8 +102,8 @@ const Dashboard = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-gray-900">Dashboard</h2>
-        <p className="text-gray-600 mt-1">Welcome back! Here's what's happening today.</p>
+        <h2 className="text-2xl font-bold text-foreground">Dashboard</h2>
+        <p className="text-muted-foreground mt-1">Welcome back! Here's what's happening today.</p>
       </div>
 
       {/* Stats Grid */}
@@ -112,11 +114,11 @@ const Dashboard = () => {
       </div>
 
       {/* Recent Activity and Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold mb-4">Order Status Overview</h3>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+        <Card>
+          <h3 className="text-lg font-semibold text-foreground mb-4">Order Status Overview</h3>
           {totalOrders === 0 ? (
-            <p className="text-sm text-gray-500">No orders yet.</p>
+            <p className="text-sm text-muted-foreground">No orders yet.</p>
           ) : (
             <div className="space-y-3">
               {STATUS_META.map((s) => {
@@ -124,57 +126,61 @@ const Dashboard = () => {
                 const pct = totalOrders > 0 ? Math.round((count / totalOrders) * 100) : 0;
                 return (
                   <div key={s.key} className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">{s.label}</span>
+                    <span className="text-sm text-muted-foreground">{s.label}</span>
                     <div className="flex items-center">
-                      <div className="w-32 bg-gray-200 rounded-full h-2 mr-2">
+                      <div className="w-32 bg-muted rounded-full h-2 mr-2">
                         <div className={`${s.color} h-2 rounded-full`} style={{ width: `${pct}%` }}></div>
                       </div>
-                      <span className="text-sm font-medium w-8 text-right">{count}</span>
+                      <span className="text-sm font-medium w-8 text-right text-foreground">{count}</span>
                     </div>
                   </div>
                 );
               })}
             </div>
           )}
-        </div>
+        </Card>
 
         <RecentActivity orders={orders} />
       </div>
 
       {/* Quick Actions */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold mb-4">Quick Actions</h3>
+      <Card>
+        <h3 className="text-lg font-semibold text-foreground mb-4">Quick Actions</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <button
             onClick={() => navigate('/orders/new')}
-            className="p-4 text-center border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+            className="p-4 text-center border border-border rounded-lg hover:bg-muted transition-colors"
           >
-            <ShoppingCart className="w-8 h-8 mx-auto mb-2 text-blue-600" />
-            <span className="text-sm font-medium">New Order</span>
+            <ShoppingCart className="w-8 h-8 mx-auto mb-2 text-primary" />
+            <span className="text-sm font-medium text-foreground">New Order</span>
           </button>
-          <button
-            onClick={() => navigate('/products/new')}
-            className="p-4 text-center border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-          >
-            <Package className="w-8 h-8 mx-auto mb-2 text-green-600" />
-            <span className="text-sm font-medium">Add Product</span>
-          </button>
+          {!ORDERS_ONLY_MODE && (
+            <button
+              onClick={() => navigate('/products/new')}
+              className="p-4 text-center border border-border rounded-lg hover:bg-muted transition-colors"
+            >
+              <Package className="w-8 h-8 mx-auto mb-2 text-green-600" />
+              <span className="text-sm font-medium text-foreground">Add Product</span>
+            </button>
+          )}
           <button
             onClick={() => navigate('/orders')}
-            className="p-4 text-center border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+            className="p-4 text-center border border-border rounded-lg hover:bg-muted transition-colors"
           >
-            <ShoppingCart className="w-8 h-8 mx-auto mb-2 text-red-600" />
-            <span className="text-sm font-medium">View Orders</span>
+            <ClipboardList className="w-8 h-8 mx-auto mb-2 text-primary" />
+            <span className="text-sm font-medium text-foreground">View Orders</span>
           </button>
-          <button
-            onClick={() => navigate('/reports')}
-            className="p-4 text-center border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-          >
-            <FileText className="w-8 h-8 mx-auto mb-2 text-purple-600" />
-            <span className="text-sm font-medium">View Reports</span>
-          </button>
+          {!ORDERS_ONLY_MODE && (
+            <button
+              onClick={() => navigate('/reports')}
+              className="p-4 text-center border border-border rounded-lg hover:bg-muted transition-colors"
+            >
+              <FileText className="w-8 h-8 mx-auto mb-2 text-purple-600" />
+              <span className="text-sm font-medium text-foreground">View Reports</span>
+            </button>
+          )}
         </div>
-      </div>
+      </Card>
     </div>
   );
 };

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Clock, ShoppingCart } from 'lucide-react';
+import Card from '../ui/Card';
 
 const timeAgo = (date) => {
   if (!date) return '';
@@ -36,27 +37,27 @@ const RecentActivity = ({ orders = [] }) => {
     .slice(0, 5);
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <h3 className="text-lg font-semibold mb-4">Recent Activity</h3>
+    <Card>
+      <h3 className="text-lg font-semibold text-foreground mb-4">Recent Activity</h3>
       {recent.length === 0 ? (
-        <p className="text-sm text-gray-500">No recent orders.</p>
+        <p className="text-sm text-muted-foreground">No recent orders.</p>
       ) : (
         <div className="space-y-4">
           {recent.map((order) => (
             <Link
               key={order._id || order.orderId}
               to={`/orders/${order._id || order.orderId}`}
-              className="flex items-start space-x-3 hover:bg-gray-50 -mx-2 px-2 py-1 rounded-md transition-colors"
+              className="flex items-start space-x-3 hover:bg-muted -mx-2 px-2 py-1 rounded-md transition-colors"
             >
               <div className={`p-2 rounded-lg ${statusColor(order.status)}`}>
                 <ShoppingCart className="w-4 h-4" />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-medium text-gray-900">
+                <p className="text-sm font-medium text-foreground">
                   Order {order.orderId || order._id} — {order.status}
                 </p>
-                <p className="text-sm text-gray-500">{order.customerName}</p>
-                <div className="flex items-center mt-1 text-xs text-gray-400">
+                <p className="text-sm text-muted-foreground">{order.customerName}</p>
+                <div className="flex items-center mt-1 text-xs text-muted-foreground">
                   <Clock className="w-3 h-3 mr-1" />
                   {timeAgo(order.createdAt || order.orderDate)}
                 </div>
@@ -65,7 +66,7 @@ const RecentActivity = ({ orders = [] }) => {
           ))}
         </div>
       )}
-    </div>
+    </Card>
   );
 };
 
